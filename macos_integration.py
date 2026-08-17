@@ -30,13 +30,14 @@ class MacIntegration:
     def install_menu_bar(self):
         if not self.available or self.status_item:
             return
+        import objc
         from AppKit import NSMenu, NSMenuItem, NSView, NSPasteboardTypeURL, NSPasteboardTypeFileURL
         from Foundation import NSObject
         integration = self
 
         class DropView(NSView):
             def initWithFrame_(self, frame):
-                self = super().initWithFrame_(frame)
+                self = objc.super(DropView, self).initWithFrame_(frame)
                 if self is not None:
                     self.registerForDraggedTypes_([NSPasteboardTypeURL, NSPasteboardTypeFileURL])
                 return self

@@ -11,15 +11,32 @@ import os
 from typing import Callable, Optional
 
 import yt_dlp
+import yt_dlp.extractor as _ie_mod
 
-VIDEO_HOSTS = (
-    "youtube.com", "youtu.be", "vimeo.com", "twitch.tv", "dailymotion.com",
-    "facebook.com/watch", "tiktok.com", "twitter.com", "x.com",
-)
+_extractor_classes = None
+
+
+def _get_extractor_classes():
+    """Site-specific extractors only -- excludes yt-dlp's "Generic" extractor,
+    which matches literally any http(s) URL as a last-resort fallback and
+    would misclassify plain file downloads (zips, PDFs, ...) as video."""
+    global _extractor_classes
+    if _extractor_classes is None:
+        _extractor_classes = [c for c in _ie_mod.gen_extractor_classes() if c.ie_key() != "Generic"]
+    return _extractor_classes
 
 
 def looks_like_video_url(url: str) -> bool:
-    return any(h in url for h in VIDEO_HOSTS)
+    """True if any of yt-dlp's 1800+ site-specific extractors recognizes this
+    URL -- not just YouTube, but Vimeo, TikTok, Instagram, Reddit, Twitch,
+    and effectively every major video site yt-dlp supports."""
+    for ie_class in _get_extractor_classes():
+        try:
+            if ie_class.suitable(url):
+                return True
+        except Exception:
+            continue
+    return False
 
 
 class DownloadPaused(Exception):
