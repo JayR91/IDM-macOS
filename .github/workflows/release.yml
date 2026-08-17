@@ -1,0 +1,39 @@
+name: Build and release DMG
+
+# Triggers on any version tag push (e.g. `git tag v1.0.1 && git push origin v1.0.1`).
+# Builds the standalone .app with PyInstaller, packages it into a .dmg, and
+# attaches it to a GitHub Release for that tag -- the same steps documented
+# in scripts/build_dmg.sh, just run automatically instead of by hand.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build DMG
+        run: ./scripts/build_dmg.sh
+
+      - name: Create release and upload DMG
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" "IDM Clone Installer.dmg" \
+            --title "IDM Clone ${{ github.ref_name }}" \
+            --generate-notes
