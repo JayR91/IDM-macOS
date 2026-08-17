@@ -46,7 +46,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='IDM Clone.app',
-    icon=None,
+    icon='AppIcon.icns',
     bundle_identifier='com.idmclone.app',
     info_plist={
         'CFBundleDisplayName': 'IDM Clone',
