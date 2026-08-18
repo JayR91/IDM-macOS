@@ -18,10 +18,16 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
 
     @app.after_request
     def add_cors(resp):
-        # Local-only, but the extension calls this from page/extension context.
-        resp.headers["Access-Control-Allow-Origin"] = "*"
-        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        # Only the extension's own chrome-extension:// origin gets CORS
+        # access -- a wildcard "*" here would let ANY website the user has
+        # open silently POST to this server (it's bound to localhost, but
+        # any page's JS can still reach 127.0.0.1) and trigger downloads
+        # without the user's knowledge.
+        origin = request.headers.get("Origin", "")
+        if origin.startswith("chrome-extension://"):
+            resp.headers["Access-Control-Allow-Origin"] = origin
+            resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+            resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
         return resp
 
     @app.route("/ping", methods=["GET"])
@@ -32,6 +38,14 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
     def add():
         if request.method == "OPTIONS":
             return "", 200
+        # Defense in depth: CORS headers alone only stop a malicious page's
+        # JS from reading the response, not from sending a simple/no-preflight
+        # request in the first place. Reject anything not from the extension
+        # outright. Requests with no Origin header at all (curl, the popup's
+        # own fetch, direct localhost testing) are still allowed.
+        origin = request.headers.get("Origin", "")
+        if origin and not origin.startswith("chrome-extension://"):
+            return jsonify({"error": "forbidden origin"}), 403
         data = request.get_json(force=True, silent=True) or {}
         url = data.get("url")
         if not url:
