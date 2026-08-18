@@ -50,9 +50,19 @@ app = BUNDLE(
     bundle_identifier='com.idmclone.app',
     info_plist={
         'CFBundleDisplayName': 'IDM Clone',
-        'CFBundleURLTypes': [{
-            'CFBundleURLName': 'Download URL',
-            'CFBundleURLSchemes': ['http', 'https'],
-        }],
+        'CFBundleURLTypes': [
+            {
+                'CFBundleURLName': 'Download URL',
+                'CFBundleURLSchemes': ['http', 'https'],
+            },
+            {
+                # Lets the browser extension launch the app when it isn't
+                # running, the same way zoommtg:// or slack:// do -- the
+                # extension navigates to idmclone://launch and macOS starts
+                # (or foregrounds) this app in response.
+                'CFBundleURLName': 'IDM Clone Launch',
+                'CFBundleURLSchemes': ['idmclone'],
+            },
+        ],
     },
 )

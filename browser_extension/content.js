@@ -23,6 +23,56 @@
     return location.href;
   }
 
+  function sendMsg(type, extra) {
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage(Object.assign({ type }, extra), (resp) => {
+          void chrome.runtime.lastError;
+          resolve(resp || {});
+        });
+      } catch (e) {
+        resolve({});
+      }
+    });
+  }
+
+  // A real <a href="idmclone://..."> click in the page's own DOM, not
+  // chrome.tabs.create from the background script: Chrome will silently
+  // let tabs.create "succeed" (valid tab, no error) without actually
+  // handing off to the OS protocol handler when it's driven through the
+  // extension APIs like that. A genuine anchor click is the same
+  // mechanism real "Open in App" links on websites use, and is what
+  // Chrome's external-protocol handling actually honors reliably. The
+  // first time, the browser shows a one-time "Open in IDM Clone?"
+  // confirmation -- expected, and only needed once.
+  function launchAppViaLink() {
+    const a = document.createElement("a");
+    a.href = "idmclone://launch";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 100);
+  }
+
+  // Tries the download; if the app isn't running, launches it and polls
+  // until it responds, then retries once. This whole multi-second sequence
+  // runs here in the content script -- it stays alive as long as the page
+  // does, unlike the background script's MV3 service worker, which Chrome
+  // can suspend mid-wait.
+  async function downloadViaApp(url) {
+    let resp = await sendMsg("idm_try_add", { url });
+    if (resp.ok) return true;
+
+    launchAppViaLink();
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 500));
+      if ((await sendMsg("idm_ping")).ok) break;
+    }
+    resp = await sendMsg("idm_try_add", { url });
+    return !!resp.ok;
+  }
+
   function makeButton(video) {
     const btn = document.createElement("div");
     btn.className = BTN_CLASS;
@@ -54,16 +104,15 @@
     // The ONLY thing that ever triggers a send is a direct click on this
     // button. Attaching the overlay (including as videos scroll in/out of
     // view) never downloads anything by itself.
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
       const url = findPostUrl(video);
       btn.textContent = "Sending…";
-      chrome.runtime.sendMessage({ type: "idm_download", url }, (resp) => {
-        btn.textContent = resp && resp.ok ? "✓ Sent to IDM" : "✗ App not running";
-        setTimeout(() => (btn.textContent = IDLE_LABEL), 2200);
-      });
+      const ok = await downloadViaApp(url);
+      btn.textContent = ok ? "✓ Sent to IDM" : "✗ App not running";
+      setTimeout(() => (btn.textContent = IDLE_LABEL), 2200);
     });
     ["mousedown", "mouseup"].forEach((evt) =>
       btn.addEventListener(evt, (e) => e.stopPropagation())
