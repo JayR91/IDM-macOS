@@ -1,13 +1,13 @@
 #!/bin/bash
-# Builds "IDM Clone.app" with PyInstaller and packages it into a
+# Builds "IDM.app" with PyInstaller and packages it into a
 # double-clickable .dmg installer. Used both for local builds and by
 # .github/workflows/release.yml on every version tag push.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-APP_NAME="IDM Clone"
-DMG_NAME="IDM Clone Installer.dmg"
+APP_NAME="IDM"
+DMG_NAME="IDM Installer.dmg"
 STAGING_DIR="dist/dmg_staging"
 
 echo "==> Building '$APP_NAME.app' with PyInstaller"

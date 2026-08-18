@@ -68,8 +68,8 @@ class MacIntegration:
         view = DropView.alloc().initWithFrame_(((0, 0), (26, 22)))
         self.status_item.setView_(view)
         menu = NSMenu.alloc().init()
-        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Show IDM Clone", "showWindow:", "")
-        quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit IDM Clone", "quitApp:", "")
+        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Show IDM", "showWindow:", "")
+        quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit IDM", "quitApp:", "")
 
         class Actions(NSObject):
             def showWindow_(self, sender):

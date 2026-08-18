@@ -34,6 +34,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" "IDM Clone Installer.dmg" \
-            --title "IDM Clone ${{ github.ref_name }}" \
+          gh release create "${{ github.ref_name }}" "IDM Installer.dmg" \
+            --title "IDM ${{ github.ref_name }}" \
             --generate-notes

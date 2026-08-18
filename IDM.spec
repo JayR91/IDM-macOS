@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='IDM Clone',
+    name='IDM',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -41,15 +41,15 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='IDM Clone',
+    name='IDM',
 )
 app = BUNDLE(
     coll,
-    name='IDM Clone.app',
+    name='IDM.app',
     icon='AppIcon.icns',
     bundle_identifier='com.idmclone.app',
     info_plist={
-        'CFBundleDisplayName': 'IDM Clone',
+        'CFBundleDisplayName': 'IDM',
         'CFBundleURLTypes': [
             {
                 'CFBundleURLName': 'Download URL',
@@ -59,8 +59,10 @@ app = BUNDLE(
                 # Lets the browser extension launch the app when it isn't
                 # running, the same way zoommtg:// or slack:// do -- the
                 # extension navigates to idmclone://launch and macOS starts
-                # (or foregrounds) this app in response.
-                'CFBundleURLName': 'IDM Clone Launch',
+                # (or foregrounds) this app in response. Scheme name kept
+                # as-is even after the "IDM Clone" -> "IDM" rename since
+                # users may have already granted it OS-level permission.
+                'CFBundleURLName': 'IDM Launch',
                 'CFBundleURLSchemes': ['idmclone'],
             },
         ],

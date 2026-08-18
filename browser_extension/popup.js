@@ -19,7 +19,7 @@ document.getElementById("sendTab").addEventListener("click", async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url: tab.url }),
     });
-    statusEl.textContent = resp.ok ? "Sent to IDM Clone." : "Failed — is the app running?";
+    statusEl.textContent = resp.ok ? "Sent to IDM." : "Failed — is the app running?";
   } catch (e) {
     statusEl.textContent = "Could not reach the app. Is it running?";
   }

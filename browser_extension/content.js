@@ -43,7 +43,7 @@
   // extension APIs like that. A genuine anchor click is the same
   // mechanism real "Open in App" links on websites use, and is what
   // Chrome's external-protocol handling actually honors reliably. The
-  // first time, the browser shows a one-time "Open in IDM Clone?"
+  // first time, the browser shows a one-time "Open in IDM?"
   // confirmation -- expected, and only needed once.
   function launchAppViaLink() {
     const a = document.createElement("a");

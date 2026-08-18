@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## What this is
 
-IDM Clone is a desktop download manager (inspired by Internet Download Manager) built in Python: a
+IDM is a desktop download manager (inspired by Internet Download Manager) built in Python: a
 Tkinter GUI, a segmented/resumable HTTP download engine, yt-dlp-based video capture, a local Flask
 server for a companion Chrome extension, and macOS-specific integration (Dock badge, native
 notifications, a menu-bar URL drop target, and a "Focus Guard" that adapts download behavior to
@@ -25,7 +25,7 @@ python main.py                       # opens the Tk window + starts the local se
 
 # Build a double-clickable macOS .app (either flow works; the repo has configs for both)
 PYINSTALLER_CONFIG_DIR=/private/tmp/idmclone-pyinstaller-cache \
-  pyinstaller --noconfirm "IDM Clone.spec"
+  pyinstaller --noconfirm "IDM.spec"
 python setup.py py2app                # alternative: py2app packaging
 ```
 
@@ -102,7 +102,7 @@ PyObjC). Never assume it's present.
 into the same `add_url_from_drop` path.
 
 **`browser_extension/`** (Manifest V3): `background.js` is the service worker — it intercepts
-native Chrome downloads and adds the right-click "Download with IDM Clone" menu. `content.js`
+native Chrome downloads and adds the right-click "Download with IDM" menu. `content.js`
 injects a floating "⬇ IDM" button onto YouTube's player (`.html5-video-player`), re-injecting on
 `yt-navigate-finish` since YouTube is an SPA, and talks to the local server via
 `chrome.runtime.sendMessage` to `background.js` rather than fetching directly — YouTube's page CSP
@@ -124,7 +124,7 @@ can block a content script's own `fetch()` to `127.0.0.1` but not the background
   `_sync_system_theme()` poll `defaults read -g AppleInterfaceStyle` every 1.5s and manually
   re-`style.configure(...)` every color to compensate. If you touch button/Treeview styling, update
   both the dark and light branches in `_apply_system_theme()`.
-- **The installed `.app` bundle at `~/Applications/IDM Clone.app`** is a hand-built wrapper
+- **The installed `.app` bundle at `~/Applications/IDM.app`** is a hand-built wrapper
   (`Contents/MacOS/idm_clone_launcher`, a bash script) — separate from the PyInstaller/py2app
   outputs in `build/`/`dist/`. It explicitly prepends `/opt/homebrew/bin` to `PATH` because
   GUI-launched apps (Dock/Finder) don't inherit a Terminal's `PATH`, and the app depends on

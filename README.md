@@ -1,4 +1,4 @@
-# IDM Clone — Download Manager
+# IDM — Download Manager
 
 A desktop download manager inspired by Internet Download Manager (IDM), built in Python.
 Tested components: segmented downloads, pause/resume, resume-after-restart, retry/error
@@ -30,7 +30,7 @@ handling, and bandwidth throttling (see "What's been tested" below).
   - intercept the browser's native downloads and hand them to this app instead
     (so you get segmented/resumable downloading for regular browser downloads too)
   - send the current tab, or right-clicked links/videos, to the app via
-    "Download with IDM Clone"
+    "Download with IDM"
 
 ## Requirements
 
@@ -71,10 +71,10 @@ Install the dependencies, then run:
 
 ```bash
 PYINSTALLER_CONFIG_DIR=/private/tmp/idmclone-pyinstaller-cache \
-  pyinstaller --noconfirm "IDM Clone.spec"
+  pyinstaller --noconfirm "IDM.spec"
 ```
 
-The resulting `dist/IDM Clone.app` supports Dock URL delivery via macOS argv emulation;
+The resulting `dist/IDM.app` supports Dock URL delivery via macOS argv emulation;
 links can be dropped onto its Dock icon after the bundle is launched. The menu-bar drop
 target works while running from source as well. `setup.py` remains available for py2app
 builds if you prefer that packaging flow.
@@ -88,9 +88,9 @@ builds if you prefer that packaging flow.
    while it's open and listening on port 27182.
 5. Click the extension icon to:
    - toggle **"Intercept browser downloads"** — when on, downloads you'd normally
-     see in Chrome's download bar get sent to IDM Clone instead
-   - **"Send this page/video to IDM Clone"** — manually send the current tab
-   - or right-click any link/video/audio element → **"Download with IDM Clone"**
+     see in Chrome's download bar get sent to IDM instead
+   - **"Send this page/video to IDM"** — manually send the current tab
+   - or right-click any link/video/audio element → **"Download with IDM"**
 
 ## Project structure
 

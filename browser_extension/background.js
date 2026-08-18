@@ -28,7 +28,7 @@ async function pingApp() {
 // apps like Zoom/Slack/VS Code use instead: the app registers one at
 // install time, and navigating to it is enough for the OS to start (or
 // foreground) that app. The first time, the browser shows a one-time
-// "Open in IDM Clone?" confirmation -- that's normal browser/OS behavior
+// "Open in IDM?" confirmation -- that's normal browser/OS behavior
 // for any external protocol handler, not something an extension can skip.
 function launchApp() {
   return new Promise((resolve) => {
@@ -59,7 +59,7 @@ async function sendToApp(url, filename) {
   // than immediately failing the download. (Used by the context menu and
   // download-interception paths below, which run entirely inside this
   // background script with no content script involved.)
-  console.warn("IDM Clone: app not reachable, attempting to launch it");
+  console.warn("IDM: app not reachable, attempting to launch it");
   await launchApp();
   if (!(await waitForAppReady())) return false;
   return postAdd(url, filename);
@@ -81,7 +81,7 @@ chrome.downloads.onCreated.addListener((item) => {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "send-to-idmclone",
-    title: "Download with IDM Clone",
+    title: "Download with IDM",
     contexts: ["link", "video", "audio"],
   });
 });

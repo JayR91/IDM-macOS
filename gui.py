@@ -162,7 +162,7 @@ class App:
         self._completed_handled = set()
         self._dark_mode = None
 
-        root.title("IDM Clone — Download Manager")
+        root.title("IDM — Download Manager")
         root.geometry("1000x580")
         _enable_mac_clipboard_shortcuts(root)
 
@@ -395,9 +395,9 @@ class App:
                     if payload not in self.row_by_task:
                         self._add_row(payload)
                 elif kind == "info":
-                    messagebox.showinfo("IDM Clone", payload)
+                    messagebox.showinfo("IDM", payload)
                 elif kind == "error":
-                    messagebox.showerror("IDM Clone", payload)
+                    messagebox.showerror("IDM", payload)
                 elif kind == "focus":
                     self.focus_status.config(text=payload)
         except queue.Empty:
@@ -496,9 +496,9 @@ class App:
         try:
             kb = float(self.speed_var.get())
             self.qm.set_speed_limit(int(kb * 1024) if kb > 0 else None)
-            messagebox.showinfo("IDM Clone", f"Speed limit set to {'unlimited' if kb <= 0 else f'{kb:.0f} KB/s'}")
+            messagebox.showinfo("IDM", f"Speed limit set to {'unlimited' if kb <= 0 else f'{kb:.0f} KB/s'}")
         except ValueError:
-            messagebox.showerror("IDM Clone", "Enter a valid number")
+            messagebox.showerror("IDM", "Enter a valid number")
 
     def _slider_speed_changed(self, value):
         kb = int(float(value))

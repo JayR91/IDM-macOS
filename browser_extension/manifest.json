@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "IDM Clone Connector",
+  "name": "IDM Connector",
   "version": "1.0",
-  "description": "Send downloads and video links from your browser to your local IDM Clone download manager.",
+  "description": "Send downloads and video links from your browser to your local IDM download manager.",
   "permissions": ["downloads", "activeTab", "storage", "contextMenus"],
   "host_permissions": ["http://127.0.0.1:27182/*"],
   "background": {
@@ -17,6 +17,6 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "IDM Clone"
+    "default_title": "IDM"
   }
 }
