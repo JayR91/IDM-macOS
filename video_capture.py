@@ -8,10 +8,21 @@ Note: only use this against content you have the right to download
 respect the terms of service of whatever site you're pulling from.
 """
 import os
+import sys
 from typing import Callable, Optional
 
 import yt_dlp
 import yt_dlp.extractor as _ie_mod
+
+
+def _bundled_ffmpeg_dir():
+    """When frozen by PyInstaller (see scripts/build_dmg.sh, which copies
+    the build machine's own ffmpeg next to the executable), ffmpeg ships
+    inside the app bundle so end users don't need Homebrew installed at
+    all. Returns None when running from source, falling back to PATH."""
+    if getattr(sys, "frozen", False) and os.path.exists(os.path.join(os.path.dirname(sys.executable), "ffmpeg")):
+        return os.path.dirname(sys.executable)
+    return None
 
 _extractor_classes = None
 
@@ -69,9 +80,11 @@ def download_video(
     audio_only: bool = False,
 ):
     os.makedirs(dest_dir, exist_ok=True)
+    ffmpeg_dir = _bundled_ffmpeg_dir()
     base_opts = {
         "outtmpl": os.path.join(dest_dir, "%(title).150B [%(id)s].%(ext)s"),
         "merge_output_format": "mp4",
+        **({"ffmpeg_location": ffmpeg_dir} if ffmpeg_dir else {}),
         "progress_hooks": [progress_hook] if progress_hook else [],
         # progress_hooks only report each fragment's own temp filename (e.g.
         # "...f137.mp4"), which yt-dlp deletes once it's merged. postprocessor_hooks

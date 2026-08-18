@@ -3,6 +3,25 @@ import threading
 import sys
 import tkinter as tk
 
+
+def _ensure_homebrew_path():
+    """Apps launched from the Dock/Finder don't inherit a Terminal's PATH,
+    so Homebrew-installed tools (ffmpeg, deno) silently can't be found even
+    though they're on the machine -- only running via Terminal happened to
+    work. Add their usual install locations explicitly, before anything
+    else (video_capture/yt-dlp) might shell out to them."""
+    if sys.platform != "darwin":
+        return
+    extra = ["/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin"]
+    parts = os.environ.get("PATH", "").split(os.pathsep)
+    for p in extra:
+        if p not in parts and os.path.isdir(p):
+            parts.append(p)
+    os.environ["PATH"] = os.pathsep.join(parts)
+
+
+_ensure_homebrew_path()
+
 from queue_manager import QueueManager
 from server import create_server, DEFAULT_PORT
 from gui import App, DEFAULT_DIR
