@@ -244,6 +244,11 @@ class App:
         # focused/raised on launch on their own -- make sure the window is
         # actually visible when the app is first opened.
         self.show_window()
+        # Clicking the Dock icon while the app is already running (window
+        # hidden) sends macOS's "reopen" event -- Tk's Cocoa port dispatches
+        # that to this specific Tcl command name if it exists. Without this,
+        # only the menu-bar "Show IDM" item could bring the window back.
+        self.root.createcommand("::tk::mac::ReopenApplication", self.show_window)
         # Closing the window hides it rather than quitting -- downloads and
         # the local server (for the browser extension) keep running in the
         # background, exactly like closing Slack/Mail's window doesn't quit
