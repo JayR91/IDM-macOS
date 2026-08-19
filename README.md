@@ -114,10 +114,21 @@ convert it once with Apple's own tool:
 xcrun safari-web-extension-converter browser_extension/ --project-location /path/to/output
 ```
 
-Open the generated Xcode project and build/run it (Cmd+R) to install the container app.
-Then in Safari: **Settings → Developer** → check **"Allow Unsigned Extensions"** (only
-needed for a local/unsigned build, not a notarized release) → **Settings → Extensions** →
-enable it there.
+Open the generated Xcode project and build/run it (Cmd+R), then **copy the built
+`.app` out of `DerivedData` into `~/Applications`** and launch it from there — Safari
+does not reliably list an extension whose container app lives in `DerivedData`.
+Then in Safari: **Settings → Developer** → check **"Allow Unsigned Extensions"**
+(macOS asks for your account password) → **Settings → Extensions** → enable
+**IDM Connector** → and on the first video page, click the extension's toolbar icon and
+grant it permission for that site (Safari gates host access per-site, unlike Chrome's
+`<all_urls>`; until you grant it, the content script never runs and no "⬇ IDM" button
+appears).
+
+Two Safari-specific gotchas worth knowing:
+- **"Allow Unsigned Extensions" resets every time Safari restarts.** That's Apple's
+  behavior for unsigned builds, not a bug here — a properly signed/notarized build
+  doesn't need the setting at all.
+- The per-site permission prompt is required before the injected button shows up.
 
 ### Using it
 
@@ -182,14 +193,14 @@ the code) before handing this over:
   correctly accepts `chrome-extension://` and `moz-extension://` requests and rejects
   everything else (including a plain `https://` origin, simulating an arbitrary
   website trying to reach the local server).
-- Safari: the extension converts and builds cleanly via
-  `xcrun safari-web-extension-converter`; enabling it requires a one-time
-  password-gated "Allow Unsigned Extensions" step in Safari's Developer settings that
-  only the machine's own user can grant, so that leg wasn't verified end-to-end here.
+- **Safari, end to end** — converted via `xcrun safari-web-extension-converter`, installed
+  from `~/Applications`, enabled, granted site permission, and confirmed the injected
+  "⬇ IDM" button downloads a real video to a complete h264/aac file, matching the
+  Chrome and Firefox results byte for byte. Also confirmed the collision-safe rename
+  kicked in correctly (a second download of the same video became `... (1).mp4` rather
+  than overwriting the first).
 
 **Not tested here**:
-- The Safari extension actually downloading a video (built, but not yet enabled/run —
-  see above).
 - Edge/Brave/Opera/Vivaldi specifically — these are Chromium and use the identical
   `chrome-extension://` origin and `chrome.*` APIs already verified under Chrome, but
   weren't individually installed and clicked through.
