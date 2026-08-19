@@ -6,7 +6,8 @@
   "permissions": ["downloads", "activeTab", "storage", "contextMenus"],
   "host_permissions": ["http://127.0.0.1:27182/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
@@ -18,5 +19,11 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "IDM"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "idm-connector@idm-macos.app",
+      "strict_min_version": "109.0"
+    }
   }
 }

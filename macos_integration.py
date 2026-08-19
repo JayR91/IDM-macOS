@@ -144,10 +144,21 @@ class MacIntegration:
             except Exception:
                 pass
         # Works on every reasonably current macOS release, including where the
-        # old NSUserNotification API is unavailable.
-        escaped_title = title.replace('"', '\\"')
-        escaped_body = body.replace('"', '\\"')
-        subprocess.Popen(["osascript", "-e", f'display notification "{escaped_body}" with title "{escaped_title}"'])
+        # old NSUserNotification API is unavailable. title/body can contain
+        # a downloaded video's title -- untrusted, attacker-influenceable
+        # text -- so they're passed as real argv items to the script's own
+        # `argv`, never interpolated into the AppleScript source itself.
+        # String-building the script text (even with quote-escaping) would
+        # be an AppleScript-injection hole: quote-escaping alone doesn't
+        # stop `&`, `do shell script`, or other AppleScript syntax in the
+        # content from being parsed as code.
+        subprocess.Popen([
+            "osascript",
+            "-e", "on run argv",
+            "-e", "display notification (item 2 of argv) with title (item 1 of argv)",
+            "-e", "end run",
+            title, body,
+        ])
 
     def play_completion_sound(self):
         if self.available:

@@ -6,6 +6,16 @@ from organizer import categorized_destination
 
 DEFAULT_PORT = 27182
 
+# Each browser family uses its own scheme for an extension's origin --
+# Chrome/Edge/Brave/Opera/Vivaldi (all Chromium) use chrome-extension://,
+# Firefox uses moz-extension://. Safari's is included too even though that
+# build isn't shipped yet, so this doesn't need revisiting when it is.
+_TRUSTED_EXTENSION_SCHEMES = ("chrome-extension://", "moz-extension://", "safari-web-extension://")
+
+
+def _is_trusted_origin(origin: str) -> bool:
+    return origin.startswith(_TRUSTED_EXTENSION_SCHEMES)
+
 
 def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
     """
@@ -24,7 +34,7 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
         # any page's JS can still reach 127.0.0.1) and trigger downloads
         # without the user's knowledge.
         origin = request.headers.get("Origin", "")
-        if origin.startswith("chrome-extension://"):
+        if _is_trusted_origin(origin):
             resp.headers["Access-Control-Allow-Origin"] = origin
             resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
             resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
@@ -44,7 +54,7 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
         # outright. Requests with no Origin header at all (curl, the popup's
         # own fetch, direct localhost testing) are still allowed.
         origin = request.headers.get("Origin", "")
-        if origin and not origin.startswith("chrome-extension://"):
+        if origin and not _is_trusted_origin(origin):
             return jsonify({"error": "forbidden origin"}), 403
         data = request.get_json(force=True, silent=True) or {}
         url = data.get("url")

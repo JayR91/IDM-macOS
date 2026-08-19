@@ -13,6 +13,16 @@ CATEGORY_EXTENSIONS = {
 }
 
 
+def _safe_basename(name: str) -> str:
+    """Strip any directory components and reject '.'/'..'/empty, so a
+    caller-supplied filename (e.g. derived from a URL's last path segment)
+    can never place a file outside the category folder it's meant for --
+    defense in depth even though today's only callers already sanitize
+    first."""
+    name = os.path.basename(name or "")
+    return name if name not in ("", ".", "..") else "download"
+
+
 def category_for(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
     for category, extensions in CATEGORY_EXTENSIONS.items():
@@ -33,6 +43,7 @@ def dedupe_path(path: str) -> str:
 
 def categorized_destination(download_root: str, filename: str) -> str:
     """Return a safe path in a category folder, creating it if necessary."""
+    filename = _safe_basename(filename)
     directory = os.path.join(download_root, category_for(filename))
     os.makedirs(directory, exist_ok=True)
     return dedupe_path(os.path.join(directory, filename))
