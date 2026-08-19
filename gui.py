@@ -439,9 +439,16 @@ class App:
                 self._handle_completion(task)
         # A percentage is more useful for one download; otherwise match Mail's count.
         if len(active) == 1 and active[0].total_size:
-            self.mac.set_dock_badge(str(round(active[0].bytes_downloaded() / active[0].total_size * 100)))
+            badge = str(round(active[0].bytes_downloaded() / active[0].total_size * 100))
+            progress = f"{badge}%"
         else:
-            self.mac.set_dock_badge(str(len(active)) if active else "")
+            badge = str(len(active)) if active else ""
+            progress = badge
+        self.mac.set_dock_badge(badge)
+        # Dock badges don't render without a visible Dock tile, which this
+        # app intentionally doesn't have -- this is the background-app
+        # equivalent, shown next to the menu-bar icon instead.
+        self.mac.set_progress(progress)
         self.root.after(1000, self._refresh)
 
     def _handle_completion(self, task):

@@ -16,6 +16,8 @@ class MacIntegration:
         self._add_url = add_url_callback
         self._show = show_callback
         self._quit = quit_callback
+        self._progress_text = ""
+        self._view = None
         if platform.system() != "Darwin":
             return
         try:
@@ -82,10 +84,14 @@ class MacIntegration:
                 NSColor.clearColor().set()
                 # Keep the view recognisable even in a crowded menu bar.
                 NSAttributedString.alloc().initWithString_attributes_("⇩", {"NSFont": NSFont.systemFontOfSize_(16)}).drawAtPoint_((4, 1))
+                if integration._progress_text:
+                    NSAttributedString.alloc().initWithString_attributes_(
+                        integration._progress_text, {"NSFont": NSFont.systemFontOfSize_(12)}
+                    ).drawAtPoint_((22, 4))
 
+        self._view = DropView.alloc().initWithFrame_(((0, 0), (26, 22)))
         self.status_item = self.NSStatusBar.systemStatusBar().statusItemWithLength_(26)
-        view = DropView.alloc().initWithFrame_(((0, 0), (26, 22)))
-        self.status_item.setView_(view)
+        self.status_item.setView_(self._view)
         menu = NSMenu.alloc().init()
         open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Show IDM", "showWindow:", "")
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit IDM", "quitApp:", "")
@@ -109,6 +115,22 @@ class MacIntegration:
     def set_dock_badge(self, label: str):
         if self.available:
             self.NSApplication.sharedApplication().dockTile().setBadgeLabel_(label or None)
+
+    def set_progress(self, text: str):
+        """Show download progress next to the menu-bar icon. Dock badges
+        (set_dock_badge) only render on a visible Dock tile, which this app
+        intentionally doesn't have (see the Accessory activation policy in
+        __init__) -- this is the equivalent for a background-only app."""
+        if not (self.available and self.status_item and self._view):
+            return
+        if text == self._progress_text:
+            return
+        self._progress_text = text
+        width = 26 if not text else 46
+        frame = self._view.frame()
+        self._view.setFrame_(((0, 0), (width, frame[1][1])))
+        self.status_item.setLength_(width)
+        self._view.setNeedsDisplay_(True)
 
     def notify_completion(self, title: str, body: str):
         if self.available:
