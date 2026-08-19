@@ -87,10 +87,6 @@ class DownloadTask:
         self.url = url
         self.dest_path = dest_path
         self.state_path = dest_path + ".vdrstate.json"
-        # Sidecar written by pre-rename builds. Read-only fallback so a download
-        # that was mid-flight across the upgrade resumes instead of silently
-        # restarting from zero; new state is always written to state_path.
-        self._legacy_state_path = dest_path + ".idmstate.json"
         self.num_segments = num_segments
         self.headers = headers or {}
         self.max_retries = max_retries
@@ -138,11 +134,9 @@ class DownloadTask:
                     self.accept_ranges = True
 
     def _load_state(self) -> bool:
-        for path in (self.state_path, self._legacy_state_path):
-            if not os.path.exists(path):
-                continue
+        if os.path.exists(self.state_path):
             try:
-                with open(path) as f:
+                with open(self.state_path) as f:
                     data = json.load(f)
                 self.total_size = data["total_size"]
                 self.segments = [SegmentState(**s) for s in data["segments"]]
@@ -167,12 +161,11 @@ class DownloadTask:
             pass
 
     def _cleanup_state(self):
-        for path in (self.state_path, self._legacy_state_path):
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception:
-                pass
+        try:
+            if os.path.exists(self.state_path):
+                os.remove(self.state_path)
+        except Exception:
+            pass
 
     def _init_segments(self):
         if not self.total_size or not self.accept_ranges:
