@@ -23,7 +23,6 @@ icon_locations = {
 }
 window_rect = ((200, 200), (500, 300))
 icon_size = 100
-background = "builtin-arrow"
 default_view = "icon-view"
 show_icon_preview = True
 include_icon_view_settings = True
