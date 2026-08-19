@@ -42,7 +42,7 @@ class MacIntegration:
             # normal (Dock-visible) app does, so without this the window
             # exists but can end up behind other windows / never focused --
             # invisible in practice even though the app is running. Force it
-            # forward once, on launch, so opening IDM still shows its window;
+            # forward once, on launch, so opening VDR still shows its window;
             # only closing that window afterward should hide it again.
             app.activateIgnoringOtherApps_(True)
         except ImportError:
@@ -93,8 +93,8 @@ class MacIntegration:
         self.status_item = self.NSStatusBar.systemStatusBar().statusItemWithLength_(26)
         self.status_item.setView_(self._view)
         menu = NSMenu.alloc().init()
-        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Show IDM", "showWindow:", "")
-        quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit IDM", "quitApp:", "")
+        open_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Show VDR", "showWindow:", "")
+        quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Quit VDR", "quitApp:", "")
 
         class Actions(NSObject):
             def showWindow_(self, sender):

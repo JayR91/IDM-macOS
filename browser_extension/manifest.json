@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "IDM Connector",
+  "name": "VDR Connector",
   "version": "1.0",
-  "description": "Send downloads and video links from your browser to your local IDM download manager.",
+  "description": "Send downloads and video links from your browser to your local VDR download manager.",
   "permissions": ["downloads", "activeTab", "storage", "contextMenus"],
   "host_permissions": ["http://127.0.0.1:27182/*"],
   "background": {
@@ -18,11 +18,11 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "IDM"
+    "default_title": "VDR"
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "idm-connector@idm-macos.app",
+      "id": "vdr-connector@vdr-macos.app",
       "strict_min_version": "109.0"
     }
   }

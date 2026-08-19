@@ -5,9 +5,9 @@ APP = ["main.py"]
 OPTIONS = {
     "argv_emulation": True,
     "plist": {
-        "CFBundleName": "IDM",
-        "CFBundleDisplayName": "IDM",
-        "CFBundleIdentifier": "com.idmclone.app",
+        "CFBundleName": "VDR",
+        "CFBundleDisplayName": "VDR",
+        "CFBundleIdentifier": "com.vdr.app",
         "LSUIElement": True,
         "CFBundleURLTypes": [{"CFBundleURLName": "Download URL", "CFBundleURLSchemes": ["http", "https"]}],
     },

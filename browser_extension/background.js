@@ -1,5 +1,5 @@
 const SERVER = "http://127.0.0.1:27182";
-const APP_LAUNCH_URL = "idmclone://launch";
+const APP_LAUNCH_URL = "vdr://launch";
 
 async function postAdd(url, filename) {
   try {
@@ -28,7 +28,7 @@ async function pingApp() {
 // apps like Zoom/Slack/VS Code use instead: the app registers one at
 // install time, and navigating to it is enough for the OS to start (or
 // foreground) that app. The first time, the browser shows a one-time
-// "Open in IDM?" confirmation -- that's normal browser/OS behavior
+// "Open in VDR?" confirmation -- that's normal browser/OS behavior
 // for any external protocol handler, not something an extension can skip.
 function launchApp() {
   return new Promise((resolve) => {
@@ -59,7 +59,7 @@ async function sendToApp(url, filename) {
   // than immediately failing the download. (Used by the context menu and
   // download-interception paths below, which run entirely inside this
   // background script with no content script involved.)
-  console.warn("IDM: app not reachable, attempting to launch it");
+  console.warn("VDR: app not reachable, attempting to launch it");
   await launchApp();
   if (!(await waitForAppReady())) return false;
   return postAdd(url, filename);
@@ -80,8 +80,8 @@ chrome.downloads.onCreated.addListener((item) => {
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "send-to-idmclone",
-    title: "Download with IDM",
+    id: "send-to-vdr",
+    title: "Download with VDR",
     contexts: ["link", "video", "audio"],
   });
 });
@@ -105,12 +105,12 @@ chrome.contextMenus.onClicked.addListener((info) => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg) return;
 
-  if (msg.type === "idm_try_add") {
+  if (msg.type === "vdr_try_add") {
     postAdd(msg.url, msg.filename).then((ok) => sendResponse({ ok }));
     return true;
   }
 
-  if (msg.type === "idm_ping") {
+  if (msg.type === "vdr_ping") {
     pingApp().then((ok) => sendResponse({ ok }));
     return true;
   }

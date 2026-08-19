@@ -42,7 +42,7 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
 
     @app.route("/ping", methods=["GET"])
     def ping():
-        return jsonify({"status": "ok", "app": "idm-clone"})
+        return jsonify({"status": "ok", "app": "vdr"})
 
     @app.route("/add", methods=["POST", "OPTIONS"])
     def add():

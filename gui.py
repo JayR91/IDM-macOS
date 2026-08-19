@@ -14,7 +14,7 @@ from organizer import categorized_destination, organize_completed_file
 from macos_integration import MacIntegration
 from focus_guard import FocusGuard, POLICY_HOLD
 
-DEFAULT_DIR = os.path.expanduser("~/Downloads/IDMClone")
+DEFAULT_DIR = os.path.expanduser("~/Downloads/VDR")
 
 
 def _open_path(path):
@@ -162,7 +162,7 @@ class App:
         self._completed_handled = set()
         self._dark_mode = None
 
-        root.title("IDM — Download Manager")
+        root.title("VDR — Download Manager")
         root.geometry("1000x580")
         _enable_mac_clipboard_shortcuts(root)
 
@@ -236,7 +236,16 @@ class App:
         self.tree.bind("<Double-1>", self.open_selected)
 
         self.server_status = ttk.Label(root, text="Local server: starting…", foreground="gray")
-        self.server_status.pack(anchor="w", padx=10, pady=(0, 10))
+        self.server_status.pack(anchor="w", padx=10, pady=(0, 2))
+        # Transient activity line. Deliberately NOT a messagebox: those are
+        # modal and block the Tk event loop, which stalls _refresh() -- so
+        # progress, the menu-bar indicator, and post-download organisation all
+        # freeze until someone clicks OK. In a background/menu-bar app the
+        # dialog can sit unnoticed behind other windows, so the app just looks
+        # broken. See _flash_status().
+        self.activity_status = ttk.Label(root, text="", foreground="gray")
+        self.activity_status.pack(anchor="w", padx=10, pady=(0, 10))
+        self._activity_clear_job = None
 
         self.mac = MacIntegration(self.add_url_from_drop, self.show_window, self.root.destroy)
         self.root.after(700, self.mac.install_menu_bar)
@@ -247,12 +256,12 @@ class App:
         # Clicking the Dock icon while the app is already running (window
         # hidden) sends macOS's "reopen" event -- Tk's Cocoa port dispatches
         # that to this specific Tcl command name if it exists. Without this,
-        # only the menu-bar "Show IDM" item could bring the window back.
+        # only the menu-bar "Show VDR" item could bring the window back.
         self.root.createcommand("::tk::mac::ReopenApplication", self.show_window)
         # Closing the window hides it rather than quitting -- downloads and
         # the local server (for the browser extension) keep running in the
         # background, exactly like closing Slack/Mail's window doesn't quit
-        # them. "Quit IDM" from the menu-bar icon is the real exit.
+        # them. "Quit VDR" from the menu-bar icon is the real exit.
         self.root.protocol("WM_DELETE_WINDOW", self.root.withdraw)
 
         self.root.after(200, self._drain_events)
@@ -296,6 +305,23 @@ class App:
 
     def set_server_status(self, text, color="gray"):
         self.server_status.config(text=text, foreground=color)
+
+    def _flash_status(self, text, error=False, hold_ms=8000):
+        """Show a transient one-line message without blocking the event loop.
+
+        Messages are collapsed to a single line so a long URL or traceback
+        can't resize the window.
+        """
+        line = " ".join(str(text).split())
+        self.activity_status.config(text=line, foreground="#d05a5a" if error else "gray")
+        if self._activity_clear_job is not None:
+            try:
+                self.root.after_cancel(self._activity_clear_job)
+            except Exception:
+                pass
+        self._activity_clear_job = self.root.after(
+            hold_ms, lambda: self.activity_status.config(text="")
+        )
 
     # ---------- actions ----------
 
@@ -409,9 +435,14 @@ class App:
                     if payload not in self.row_by_task:
                         self._add_row(payload)
                 elif kind == "info":
-                    messagebox.showinfo("IDM", payload)
+                    self._flash_status(payload)
                 elif kind == "error":
-                    messagebox.showerror("IDM", payload)
+                    # Errors get the same non-blocking treatment plus a native
+                    # notification, which persists in Notification Centre --
+                    # more discoverable than a modal in a background app, and
+                    # it doesn't stall every other running download.
+                    self._flash_status(payload, error=True)
+                    self.mac.notify_completion("VDR — download failed", payload)
                 elif kind == "focus":
                     self.focus_status.config(text=payload)
         except queue.Empty:
@@ -517,9 +548,9 @@ class App:
         try:
             kb = float(self.speed_var.get())
             self.qm.set_speed_limit(int(kb * 1024) if kb > 0 else None)
-            messagebox.showinfo("IDM", f"Speed limit set to {'unlimited' if kb <= 0 else f'{kb:.0f} KB/s'}")
+            self._flash_status(f"Speed limit set to {'unlimited' if kb <= 0 else f'{kb:.0f} KB/s'}", hold_ms=4000)
         except ValueError:
-            messagebox.showerror("IDM", "Enter a valid number")
+            messagebox.showerror("VDR", "Enter a valid number")
 
     def _slider_speed_changed(self, value):
         kb = int(float(value))

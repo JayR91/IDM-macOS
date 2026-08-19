@@ -1,0 +1,21 @@
+# Renders the "Sponsor" button at the top of the repo and on every release page.
+#
+# IMPORTANT: each entry below only works once you have actually enrolled with
+# that platform and its payouts are live. An entry pointing at an account that
+# does not exist yet renders a broken Sponsor link, so uncomment a line only
+# after that account is set up.
+#
+# Enrollment (India-friendly options):
+#   - GitHub Sponsors: https://github.com/sponsors/dashboard
+#       Payouts for India go through Stripe Connect; you'll need PAN + an
+#       Indian bank account, and GitHub will ask for a tax form (W-8BEN for
+#       non-US individuals).
+#   - Ko-fi:            https://ko-fi.com/  (Stripe/PayPal, supports INR payouts)
+#   - Buy Me a Coffee:  https://buymeacoffee.com/  (supports India)
+#   - Razorpay:         https://razorpay.com/  (domestic INR, use the `custom:` field)
+
+github: [JayR91]
+
+# ko_fi: your-ko-fi-username
+# buy_me_a_coffee: your-bmac-username
+# custom: ["https://your-razorpay-payment-page-url"]

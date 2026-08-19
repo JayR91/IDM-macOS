@@ -1,8 +1,8 @@
-"""Focus Guard — adaptive downloads that commercial IDM does not have.
+"""Focus Guard — power- and attention-aware downloading.
 
-Classic Internet Download Manager can cap speed and schedule by clock time.
-It has no idea whether a Mac is on battery, in Low Power Mode, or whether
-you are actively using the keyboard and mouse.
+A download manager that only knows about clock time and speed caps has no
+idea whether the Mac is on battery, in Low Power Mode, or whether you are
+actively using the keyboard and mouse.
 
 Focus Guard watches those signals and:
   - pauses transfers on battery / Low Power Mode

@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='IDM',
+    name='VDR',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -41,19 +41,19 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='IDM',
+    name='VDR',
 )
 app = BUNDLE(
     coll,
-    name='IDM.app',
+    name='VDR.app',
     icon='AppIcon.icns',
-    bundle_identifier='com.idmclone.app',
+    bundle_identifier='com.vdr.app',
     info_plist={
-        'CFBundleDisplayName': 'IDM',
+        'CFBundleDisplayName': 'VDR',
         # No Dock icon, no app menu bar, doesn't show in Cmd+Tab -- a
         # background/menu-bar-only app, like Slack's or Dropbox's tray
         # presence. The status-bar icon (macos_integration.py) is the only
-        # UI when the window is closed; "Quit IDM" there is the real exit.
+        # UI when the window is closed; "Quit VDR" there is the real exit.
         'LSUIElement': True,
         'CFBundleURLTypes': [
             {
@@ -63,12 +63,12 @@ app = BUNDLE(
             {
                 # Lets the browser extension launch the app when it isn't
                 # running, the same way zoommtg:// or slack:// do -- the
-                # extension navigates to idmclone://launch and macOS starts
-                # (or foregrounds) this app in response. Scheme name kept
-                # as-is even after the "IDM Clone" -> "IDM" rename since
-                # users may have already granted it OS-level permission.
-                'CFBundleURLName': 'IDM Launch',
-                'CFBundleURLSchemes': ['idmclone'],
+                # extension navigates to vdr://launch and macOS starts
+                # (or foregrounds) this app in response. This scheme must stay
+                # in sync with APP_LAUNCH_URL in browser_extension/background.js
+                # and launchAppViaLink() in content.js.
+                'CFBundleURLName': 'VDR Launch',
+                'CFBundleURLSchemes': ['vdr'],
             },
         ],
     },

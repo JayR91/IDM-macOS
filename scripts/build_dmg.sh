@@ -1,13 +1,13 @@
 #!/bin/bash
-# Builds "IDM.app" with PyInstaller and packages it into a
+# Builds "VDR.app" with PyInstaller and packages it into a
 # double-clickable .dmg installer. Used both for local builds and by
 # .github/workflows/release.yml on every version tag push.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-APP_NAME="IDM"
-DMG_NAME="IDM Installer.dmg"
+APP_NAME="VDR"
+DMG_NAME="VDR Installer.dmg"
 
 echo "==> Building '$APP_NAME.app' with PyInstaller"
 rm -rf build dist
@@ -32,6 +32,13 @@ else
   echo "    Building without it -- video merging will fail for anyone" >&2
   echo "    who installs this app unless they separately install ffmpeg." >&2
 fi
+
+# GPL compliance: the bundled ffmpeg is a GPLv3 build, so the license text and
+# the third-party notices (which carry the written offer for ffmpeg's source)
+# have to travel with the binary, not just live in the repo.
+echo "==> Bundling license + third-party notices"
+cp LICENSE "dist/$APP_NAME.app/Contents/Resources/LICENSE"
+cp THIRD-PARTY-NOTICES.md "dist/$APP_NAME.app/Contents/Resources/THIRD-PARTY-NOTICES.md"
 
 echo "==> Creating $DMG_NAME"
 # Plain `hdiutil create -srcfolder` sets no window size or icon layout at

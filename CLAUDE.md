@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-IDM is a desktop download manager (inspired by Internet Download Manager) built in Python: a
+VDR ("Video Downloader") is a desktop download manager built in Python: a
 Tkinter GUI, a segmented/resumable HTTP download engine, yt-dlp-based video capture, a local Flask
 server for a companion Chrome extension, and macOS-specific integration (Dock badge, native
 notifications, a menu-bar URL drop target, and a "Focus Guard" that adapts download behavior to
@@ -24,8 +24,8 @@ pip install -r requirements.txt      # requests, flask, yt-dlp (+ optional macOS
 python main.py                       # opens the Tk window + starts the local server on :27182
 
 # Build a double-clickable macOS .app (either flow works; the repo has configs for both)
-PYINSTALLER_CONFIG_DIR=/private/tmp/idmclone-pyinstaller-cache \
-  pyinstaller --noconfirm "IDM.spec"
+PYINSTALLER_CONFIG_DIR=/private/tmp/vdr-pyinstaller-cache \
+  pyinstaller --noconfirm "VDR.spec"
 python setup.py py2app                # alternative: py2app packaging
 ```
 
@@ -54,7 +54,7 @@ cross-thread Tkinter crash — preserve it for any new async work.
 - **Regular file downloads** — `engine.DownloadTask` does real segmented HTTP: probes the URL for
   `Content-Length`/`Accept-Ranges`, splits into up to 32 segments, downloads each in its own thread
   with independent exponential-backoff retry, throttles through a shared `TokenBucket`, and
-  checkpoints progress to a `<dest>.idmstate.json` sidecar so a fresh `DownloadTask` pointed at the
+  checkpoints progress to a `<dest>.vdrstate.json` sidecar so a fresh `DownloadTask` pointed at the
   same path resumes correctly (used both for app-restart resume and for Focus-Guard-triggered
   pause/release). `pause()` is a true instant freeze (clears a `threading.Event` the segment loops
   block on, mid-chunk).
@@ -75,8 +75,8 @@ minimum of the user's speed limit and Focus Guard's crawl cap, and calls `hold_f
 
 **`focus_guard.FocusGuard`** polls macOS battery/idle state every 3s via `pmset`/`ioreg` subprocess
 calls and derives one of four policies (`off` / `full` / `active` (crawl at 256 KB/s) / `battery`
-(hold)). This is intentionally not available in commercial IDM and is a differentiator called out
-in the README.
+(hold)). This power/idle-adaptive behaviour is one of VDR's distinguishing features and is
+called out in the README.
 
 **`video_capture.download_video()`** tries three format tiers in order and falls back on failure:
 H.264+AAC (universally playable, unlike YouTube's default AV1/VP9+Opus "best" streams which many
@@ -102,8 +102,8 @@ PyObjC). Never assume it's present.
 into the same `add_url_from_drop` path.
 
 **`browser_extension/`** (Manifest V3): `background.js` is the service worker — it intercepts
-native Chrome downloads and adds the right-click "Download with IDM" menu. `content.js`
-injects a floating "⬇ IDM" button onto YouTube's player (`.html5-video-player`), re-injecting on
+native Chrome downloads and adds the right-click "Download with VDR" menu. `content.js`
+injects a floating "⬇ VDR" button onto YouTube's player (`.html5-video-player`), re-injecting on
 `yt-navigate-finish` since YouTube is an SPA, and talks to the local server via
 `chrome.runtime.sendMessage` to `background.js` rather than fetching directly — YouTube's page CSP
 can block a content script's own `fetch()` to `127.0.0.1` but not the background worker's.
@@ -124,11 +124,11 @@ can block a content script's own `fetch()` to `127.0.0.1` but not the background
   `_sync_system_theme()` poll `defaults read -g AppleInterfaceStyle` every 1.5s and manually
   re-`style.configure(...)` every color to compensate. If you touch button/Treeview styling, update
   both the dark and light branches in `_apply_system_theme()`.
-- **The installed `.app` bundle at `~/Applications/IDM.app`** is a hand-built wrapper
-  (`Contents/MacOS/idm_clone_launcher`, a bash script) — separate from the PyInstaller/py2app
+- **The installed `.app` bundle at `~/Applications/VDR.app`** is a hand-built wrapper
+  (`Contents/MacOS/vdr_launcher`, a bash script) — separate from the PyInstaller/py2app
   outputs in `build/`/`dist/`. It explicitly prepends `/opt/homebrew/bin` to `PATH` because
   GUI-launched apps (Dock/Finder) don't inherit a Terminal's `PATH`, and the app depends on
   `ffmpeg` (merging) and `deno` (a JS runtime yt-dlp needs for YouTube's signature cipher) both
-  being on it. It also redirects stdout/stderr to `~/Library/Logs/IDMClone/app.log`, since a
+  being on it. It also redirects stdout/stderr to `~/Library/Logs/VDR/app.log`, since a
   GUI-launched process has no terminal and video-download failures otherwise vanish into an
   unreadable Tk messagebox.

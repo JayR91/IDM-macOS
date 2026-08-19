@@ -1,7 +1,7 @@
 (function () {
-  const BTN_CLASS = "idm-clone-overlay-btn";
-  const IDLE_LABEL = "⬇ IDM";
-  const ATTACHED_ATTR = "data-idm-attached";
+  const BTN_CLASS = "vdr-overlay-btn";
+  const IDLE_LABEL = "⬇ VDR";
+  const ATTACHED_ATTR = "data-vdr-attached";
 
   // Resolve the URL for the specific post a <video> belongs to, not just
   // "the current page" -- X/Twitter (and similar feeds) can show many
@@ -36,18 +36,18 @@
     });
   }
 
-  // A real <a href="idmclone://..."> click in the page's own DOM, not
+  // A real <a href="vdr://..."> click in the page's own DOM, not
   // chrome.tabs.create from the background script: Chrome will silently
   // let tabs.create "succeed" (valid tab, no error) without actually
   // handing off to the OS protocol handler when it's driven through the
   // extension APIs like that. A genuine anchor click is the same
   // mechanism real "Open in App" links on websites use, and is what
   // Chrome's external-protocol handling actually honors reliably. The
-  // first time, the browser shows a one-time "Open in IDM?"
+  // first time, the browser shows a one-time "Open in VDR?"
   // confirmation -- expected, and only needed once.
   function launchAppViaLink() {
     const a = document.createElement("a");
-    a.href = "idmclone://launch";
+    a.href = "vdr://launch";
     a.style.display = "none";
     document.body.appendChild(a);
     a.click();
@@ -60,16 +60,16 @@
   // does, unlike the background script's MV3 service worker, which Chrome
   // can suspend mid-wait.
   async function downloadViaApp(url) {
-    let resp = await sendMsg("idm_try_add", { url });
+    let resp = await sendMsg("vdr_try_add", { url });
     if (resp.ok) return true;
 
     launchAppViaLink();
     const deadline = Date.now() + 10000;
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
-      if ((await sendMsg("idm_ping")).ok) break;
+      if ((await sendMsg("vdr_ping")).ok) break;
     }
-    resp = await sendMsg("idm_try_add", { url });
+    resp = await sendMsg("vdr_try_add", { url });
     return !!resp.ok;
   }
 
@@ -111,7 +111,7 @@
       const url = findPostUrl(video);
       btn.textContent = "Sending…";
       const ok = await downloadViaApp(url);
-      btn.textContent = ok ? "✓ Sent to IDM" : "✗ App not running";
+      btn.textContent = ok ? "✓ Sent to VDR" : "✗ App not running";
       setTimeout(() => (btn.textContent = IDLE_LABEL), 2200);
     });
     ["mousedown", "mouseup"].forEach((evt) =>

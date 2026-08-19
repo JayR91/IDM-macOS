@@ -1,6 +1,10 @@
-# IDM — Download Manager
+# VDR — Video Downloader
 
-A desktop download manager inspired by Internet Download Manager (IDM), built in Python.
+A fast, resumable desktop download manager for macOS, built in Python. VDR does real
+segmented HTTP downloading, captures video from hundreds of streaming sites, integrates
+with every major browser, and adapts its own behaviour to your Mac's battery and idle
+state.
+
 Tested components: segmented downloads, pause/resume, resume-after-restart, retry/error
 handling, and bandwidth throttling (see "What's been tested" below).
 
@@ -9,20 +13,21 @@ handling, and bandwidth throttling (see "What's been tested" below).
 - **Multi-threaded / segmented downloads** — splits a file into up to 32 parallel segments
   when the server supports HTTP range requests, for faster downloads.
 - **Pause / resume** — pauses instantly, mid-chunk, even while bandwidth-throttled.
-- **Resume after app restart** — progress is checkpointed to a small `.idmstate.json`
+- **Resume after app restart** — progress is checkpointed to a small `.vdrstate.json`
   sidecar file next to each download, so closing the app and relaunching resumes cleanly.
 - **Automatic retry** — each segment retries independently with exponential backoff
   (default 5 retries) before the whole download is marked as failed.
 - **Bandwidth throttling** — a global speed cap (KB/s) shared fairly across all active
   downloads and segments, adjustable live with a numeric field or slider.
-- **Focus Guard** — unique vs commercial IDM: pauses downloads on battery or
-  Low Power Mode, crawls at 256 KB/s while you are using the Mac, and returns
-  to full speed once the machine is idle and plugged in. Toggle it in the toolbar.
+- **Focus Guard** — VDR watches your Mac's power and idle state: it pauses downloads
+  on battery or Low Power Mode, crawls at 256 KB/s while you're actively using the
+  machine so browsing stays snappy, and returns to full speed once it's idle and
+  plugged in. Toggle it in the toolbar.
 - **macOS integration** — a live Dock badge, menu-bar drop target, automatic light/dark
   appearance, native completion notifications, and the Glass system chime.
 - **Scheduling and organisation** — queue a URL for a future time (blank scheduling time
   means the next midnight); completed files are sorted into Videos, Documents, Zips,
-  Audio, Images, or Other folders inside `~/Downloads/IDMClone`.
+  Audio, Images, or Other folders inside `~/Downloads/VDR`.
 - **Video/stream capture** — powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp), the
   actively maintained open-source extractor used by many real download tools, for
   YouTube and hundreds of other sites.
@@ -31,8 +36,8 @@ handling, and bandwidth throttling (see "What's been tested" below).
   - intercept the browser's native downloads and hand them to this app instead
     (so you get segmented/resumable downloading for regular browser downloads too)
   - send the current tab, or right-clicked links/videos, to the app via
-    "Download with IDM"
-  - inject a floating "⬇ IDM" button directly onto video players (YouTube, X/Twitter,
+    "Download with VDR"
+  - inject a floating "⬇ VDR" button directly onto video players (YouTube, X/Twitter,
     and hundreds of other sites yt-dlp recognizes)
 
 ## Requirements
@@ -59,7 +64,7 @@ localhost — nothing external can reach it).
 - **+ Add URL** — paste a direct file link, pick a save location and number of
   segments (default 8).
 - **+ Add Video/Stream** — paste a video page URL (YouTube, etc.); this uses yt-dlp
-  in the background and saves into `~/Downloads/IDMClone`.
+  in the background and saves into `~/Downloads/VDR`.
 - Select a row to **Pause / Resume / Cancel / Remove / Open Folder**.
 - Set a global **speed limit** in KB/s (0 = unlimited) and click Apply.
 - Turn on **Focus Guard** to pause on battery and slow down while you are at the keyboard.
@@ -73,11 +78,11 @@ localhost — nothing external can reach it).
 Install the dependencies, then run:
 
 ```bash
-PYINSTALLER_CONFIG_DIR=/private/tmp/idmclone-pyinstaller-cache \
-  pyinstaller --noconfirm "IDM.spec"
+PYINSTALLER_CONFIG_DIR=/private/tmp/vdr-pyinstaller-cache \
+  pyinstaller --noconfirm "VDR.spec"
 ```
 
-The resulting `dist/IDM.app` supports Dock URL delivery via macOS argv emulation;
+The resulting `dist/VDR.app` supports Dock URL delivery via macOS argv emulation;
 links can be dropped onto its Dock icon after the bundle is launched. The menu-bar drop
 target works while running from source as well. `setup.py` remains available for py2app
 builds if you prefer that packaging flow.
@@ -119,9 +124,9 @@ Open the generated Xcode project and build/run it (Cmd+R), then **copy the built
 does not reliably list an extension whose container app lives in `DerivedData`.
 Then in Safari: **Settings → Developer** → check **"Allow Unsigned Extensions"**
 (macOS asks for your account password) → **Settings → Extensions** → enable
-**IDM Connector** → and on the first video page, click the extension's toolbar icon and
+**VDR Connector** → and on the first video page, click the extension's toolbar icon and
 grant it permission for that site (Safari gates host access per-site, unlike Chrome's
-`<all_urls>`; until you grant it, the content script never runs and no "⬇ IDM" button
+`<all_urls>`; until you grant it, the content script never runs and no "⬇ VDR" button
 appears).
 
 Two Safari-specific gotchas worth knowing:
@@ -132,19 +137,19 @@ Two Safari-specific gotchas worth knowing:
 
 ### Using it
 
-Click the extension icon (or, on the video button, click "⬇ IDM" directly on the player) to:
+Click the extension icon (or, on the video button, click "⬇ VDR" directly on the player) to:
 - toggle **"Intercept browser downloads"** — when on, downloads you'd normally see in
-  the browser's download bar get sent to IDM instead
-- **"Send this page/video to IDM"** — manually send the current tab
-- or right-click any link/video/audio element → **"Download with IDM"**
+  the browser's download bar get sent to VDR instead
+- **"Send this page/video to VDR"** — manually send the current tab
+- or right-click any link/video/audio element → **"Download with VDR"**
 
 ## Project structure
 
 ```
-idm_clone/
+vdr/
   engine.py            # core download engine (segments, resume, retry, throttling)
   queue_manager.py      # manages concurrent downloads + global speed limit
-  focus_guard.py        # battery / idle-aware Focus Guard (not in commercial IDM)
+  focus_guard.py        # battery / idle-aware Focus Guard
   video_capture.py      # yt-dlp wrapper for video/stream downloads
   organizer.py           # post-download category routing + filename sanitization
   macos_integration.py   # optional Dock/menu-bar/notification integration (PyObjC)
@@ -157,7 +162,7 @@ idm_clone/
                           # Firefox's scripts background forms + gecko id
     background.js        # intercepts downloads, adds right-click menu, proxies
                           # fetches for content.js (page CSP can block those directly)
-    content.js            # injects the floating "⬇ IDM" button onto video players
+    content.js            # injects the floating "⬇ VDR" button onto video players
     popup.html / popup.js
 ```
 
@@ -187,7 +192,7 @@ the code) before handing this over:
 - **Local server for the extension** — verified `/ping`, `/add` for a regular
   file, and `/add` for a recognized video URL all respond correctly.
 - **Cross-browser extension, end to end, in real browsers** — loaded the unmodified
-  extension in both Chrome and Firefox, clicked the injected "⬇ IDM" button on a real
+  extension in both Chrome and Firefox, clicked the injected "⬇ VDR" button on a real
   YouTube video in each, and confirmed a complete, correctly h264/aac-encoded file
   landed on disk in both cases. Also verified the local server's origin allowlist
   correctly accepts `chrome-extension://` and `moz-extension://` requests and rejects
@@ -195,7 +200,7 @@ the code) before handing this over:
   website trying to reach the local server).
 - **Safari, end to end** — converted via `xcrun safari-web-extension-converter`, installed
   from `~/Applications`, enabled, granted site permission, and confirmed the injected
-  "⬇ IDM" button downloads a real video to a complete h264/aac file, matching the
+  "⬇ VDR" button downloads a real video to a complete h264/aac file, matching the
   Chrome and Firefox results byte for byte. Also confirmed the collision-safe rename
   kicked in correctly (a second download of the same video became `... (1).mp4` rather
   than overwriting the first).
@@ -212,8 +217,23 @@ the code) before handing this over:
   connection automatically.
 - Only use the video-capture feature on content you have the right to
   download — respect the terms of service of whatever site you're pulling from.
-- This is a functional starting point, not a polished consumer product — e.g.
-  there's no installer, no system tray integration, and the GUI is intentionally
-  simple. Good next steps if you want to keep extending it: a proper icon set
-  for the extension, a settings dialog for default segment count/retries, and
-  packaging the app with PyInstaller for a double-clickable executable.
+- The app is not code-signed or notarized by Apple, so the first launch needs a
+  right-click → Open (or an allow in System Settings → Privacy & Security).
+- Ideas for where this goes next: a settings dialog for default segment count and
+  retries, a proper icon set for the browser extension, and a signed/notarized build
+  so the first-launch warning goes away.
+
+## Support this project
+
+If VDR is useful to you, sponsoring it is the most direct way to keep it maintained —
+see the **Sponsor** button at the top of this repository.
+
+## License
+
+VDR is free software, licensed under the **GNU General Public License v3.0** — see
+[LICENSE](LICENSE).
+
+The distributed macOS app bundles an FFmpeg binary built with `--enable-gpl`, which is
+what makes GPLv3 the license for the release as a whole. Full attribution for every
+bundled component, along with the written offer for FFmpeg's corresponding source code,
+is in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
