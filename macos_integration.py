@@ -34,7 +34,15 @@ class MacIntegration:
             # shared NSApplication regardless of it. Overriding the policy
             # here, after Tk has already set it up, is what actually hides
             # the Dock icon and makes this a background/menu-bar-only app.
-            NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+            app = NSApplication.sharedApplication()
+            app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+            # Accessory apps don't get the automatic on-launch activation a
+            # normal (Dock-visible) app does, so without this the window
+            # exists but can end up behind other windows / never focused --
+            # invisible in practice even though the app is running. Force it
+            # forward once, on launch, so opening IDM still shows its window;
+            # only closing that window afterward should hide it again.
+            app.activateIgnoringOtherApps_(True)
         except ImportError:
             return
 

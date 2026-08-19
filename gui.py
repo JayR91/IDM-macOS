@@ -240,6 +240,10 @@ class App:
 
         self.mac = MacIntegration(self.add_url_from_drop, self.show_window, self.root.destroy)
         self.root.after(700, self.mac.install_menu_bar)
+        # Accessory-policy apps (see macos_integration.py) don't reliably get
+        # focused/raised on launch on their own -- make sure the window is
+        # actually visible when the app is first opened.
+        self.show_window()
         # Closing the window hides it rather than quitting -- downloads and
         # the local server (for the browser extension) keep running in the
         # background, exactly like closing Slack/Mail's window doesn't quit
