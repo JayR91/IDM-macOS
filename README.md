@@ -26,11 +26,14 @@ handling, and bandwidth throttling (see "What's been tested" below).
 - **Video/stream capture** — powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp), the
   actively maintained open-source extractor used by many real download tools, for
   YouTube and hundreds of other sites.
-- **Browser integration** — a Chrome extension (Manifest V3) that can:
+- **Browser integration** — a Manifest V3 extension for Chrome/Edge/Brave/Opera/Vivaldi,
+  Firefox, and Safari that can:
   - intercept the browser's native downloads and hand them to this app instead
     (so you get segmented/resumable downloading for regular browser downloads too)
   - send the current tab, or right-clicked links/videos, to the app via
     "Download with IDM"
+  - inject a floating "⬇ IDM" button directly onto video players (YouTube, X/Twitter,
+    and hundreds of other sites yt-dlp recognizes)
 
 ## Requirements
 
@@ -81,16 +84,48 @@ builds if you prefer that packaging flow.
 
 ## Installing the browser extension
 
-1. Open `chrome://extensions` (or `edge://extensions` for Edge).
+The same `browser_extension/` source works, unmodified, in every Chromium-based browser
+(Chrome, Edge, Brave, Opera, Vivaldi) and in Firefox. Safari needs a one-time conversion
+into a native app wrapper (Apple requires this — there's no "load unpacked" for Safari).
+In all cases, make sure the desktop app (`main.py`, or the installed `.app`) is running
+first — the extension only works while it's listening on `127.0.0.1:27182`.
+
+### Chrome, Edge, Brave, Opera, Vivaldi (Chromium)
+
+1. Open `chrome://extensions` (`edge://extensions`, `brave://extensions`, etc).
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select the `browser_extension/` folder.
-4. Make sure the desktop app (`main.py`) is running — the extension only works
-   while it's open and listening on port 27182.
-5. Click the extension icon to:
-   - toggle **"Intercept browser downloads"** — when on, downloads you'd normally
-     see in Chrome's download bar get sent to IDM instead
-   - **"Send this page/video to IDM"** — manually send the current tab
-   - or right-click any link/video/audio element → **"Download with IDM"**
+
+### Firefox
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on…** and select `browser_extension/manifest.json`
+   directly (not the folder).
+3. This load is temporary — Firefox drops it on restart. For a permanent install,
+   the extension needs to be signed by Mozilla (`web-ext sign`) or Firefox needs to be
+   on the Developer/Nightly channel with `xpinstall.signatures.required` disabled.
+
+### Safari
+
+Safari extensions must be a signed Xcode app extension, not a loose folder of JS —
+convert it once with Apple's own tool:
+
+```bash
+xcrun safari-web-extension-converter browser_extension/ --project-location /path/to/output
+```
+
+Open the generated Xcode project and build/run it (Cmd+R) to install the container app.
+Then in Safari: **Settings → Developer** → check **"Allow Unsigned Extensions"** (only
+needed for a local/unsigned build, not a notarized release) → **Settings → Extensions** →
+enable it there.
+
+### Using it
+
+Click the extension icon (or, on the video button, click "⬇ IDM" directly on the player) to:
+- toggle **"Intercept browser downloads"** — when on, downloads you'd normally see in
+  the browser's download bar get sent to IDM instead
+- **"Send this page/video to IDM"** — manually send the current tab
+- or right-click any link/video/audio element → **"Download with IDM"**
 
 ## Project structure
 
@@ -100,13 +135,18 @@ idm_clone/
   queue_manager.py      # manages concurrent downloads + global speed limit
   focus_guard.py        # battery / idle-aware Focus Guard (not in commercial IDM)
   video_capture.py      # yt-dlp wrapper for video/stream downloads
+  organizer.py           # post-download category routing + filename sanitization
+  macos_integration.py   # optional Dock/menu-bar/notification integration (PyObjC)
   server.py             # local Flask server for the browser extension
   gui.py                # Tkinter desktop UI
   main.py               # entry point — wires everything together
   requirements.txt
   browser_extension/
-    manifest.json
-    background.js       # intercepts downloads, adds right-click menu
+    manifest.json        # MV3; declares both Chromium's service_worker and
+                          # Firefox's scripts background forms + gecko id
+    background.js        # intercepts downloads, adds right-click menu, proxies
+                          # fetches for content.js (page CSP can block those directly)
+    content.js            # injects the floating "⬇ IDM" button onto video players
     popup.html / popup.js
 ```
 
@@ -135,10 +175,24 @@ the code) before handing this over:
   the Tk main loop is the only thing that touches widgets).
 - **Local server for the extension** — verified `/ping`, `/add` for a regular
   file, and `/add` for a recognized video URL all respond correctly.
+- **Cross-browser extension, end to end, in real browsers** — loaded the unmodified
+  extension in both Chrome and Firefox, clicked the injected "⬇ IDM" button on a real
+  YouTube video in each, and confirmed a complete, correctly h264/aac-encoded file
+  landed on disk in both cases. Also verified the local server's origin allowlist
+  correctly accepts `chrome-extension://` and `moz-extension://` requests and rejects
+  everything else (including a plain `https://` origin, simulating an arbitrary
+  website trying to reach the local server).
+- Safari: the extension converts and builds cleanly via
+  `xcrun safari-web-extension-converter`; enabling it requires a one-time
+  password-gated "Allow Unsigned Extensions" step in Safari's Developer settings that
+  only the machine's own user can grant, so that leg wasn't verified end-to-end here.
 
-**Not tested here** (no real network access / browser in this environment):
-- The Chrome extension loaded in an actual browser.
-- yt-dlp against real, live video sites.
+**Not tested here**:
+- The Safari extension actually downloading a video (built, but not yet enabled/run —
+  see above).
+- Edge/Brave/Opera/Vivaldi specifically — these are Chromium and use the identical
+  `chrome-extension://` origin and `chrome.*` APIs already verified under Chrome, but
+  weren't individually installed and clicked through.
 
 ## Notes & limitations
 
