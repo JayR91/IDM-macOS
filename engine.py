@@ -305,7 +305,10 @@ class DownloadTask:
                 if attempt > self.max_retries:
                     self._set_status(Status.ERROR, f"Segment {seg.index} failed after {self.max_retries} retries: {e}")
                     return
-                time.sleep(min(2 ** attempt, 30))
+                # wait() (not sleep()) so a cancel during backoff takes effect
+                # immediately instead of leaving Cancel looking hung for up to 30s.
+                if self.cancel_event.wait(timeout=min(2 ** attempt, 30)):
+                    return
 
     def pause(self):
         if self.status in (Status.DOWNLOADING, Status.CONNECTING, Status.HELD):
