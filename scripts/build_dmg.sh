@@ -8,7 +8,6 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="IDM"
 DMG_NAME="IDM Installer.dmg"
-STAGING_DIR="dist/dmg_staging"
 
 echo "==> Building '$APP_NAME.app' with PyInstaller"
 rm -rf build dist
@@ -34,14 +33,15 @@ else
   echo "    who installs this app unless they separately install ffmpeg." >&2
 fi
 
-echo "==> Staging DMG contents"
-rm -rf "$STAGING_DIR"
-mkdir -p "$STAGING_DIR"
-cp -R "dist/$APP_NAME.app" "$STAGING_DIR/"
-ln -s /Applications "$STAGING_DIR/Applications"
-
 echo "==> Creating $DMG_NAME"
+# Plain `hdiutil create -srcfolder` sets no window size or icon layout at
+# all, so Finder falls back to defaults that often stack the app and the
+# Applications shortcut on top of each other -- it looks like nothing is
+# draggable even though it technically is. dmgbuild constructs a proper
+# .DS_Store with both icons laid out side by side (see dmg_settings.py),
+# without needing Finder automation permissions to build it.
 rm -f "$DMG_NAME"
-hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_NAME"
+DMG_APP_NAME="$APP_NAME" DMG_APP_PATH="dist/$APP_NAME.app" \
+  dmgbuild -s scripts/dmg_settings.py "$APP_NAME" "$DMG_NAME"
 
 echo "==> Done: $DMG_NAME"
