@@ -8,6 +8,7 @@ OPTIONS = {
         "CFBundleName": "IDM",
         "CFBundleDisplayName": "IDM",
         "CFBundleIdentifier": "com.idmclone.app",
+        "LSUIElement": True,
         "CFBundleURLTypes": [{"CFBundleURLName": "Download URL", "CFBundleURLSchemes": ["http", "https"]}],
     },
 }

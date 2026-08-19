@@ -240,6 +240,11 @@ class App:
 
         self.mac = MacIntegration(self.add_url_from_drop, self.show_window, self.root.destroy)
         self.root.after(700, self.mac.install_menu_bar)
+        # Closing the window hides it rather than quitting -- downloads and
+        # the local server (for the browser extension) keep running in the
+        # background, exactly like closing Slack/Mail's window doesn't quit
+        # them. "Quit IDM" from the menu-bar icon is the real exit.
+        self.root.protocol("WM_DELETE_WINDOW", self.root.withdraw)
 
         self.root.after(200, self._drain_events)
         self.root.after(500, self._refresh)

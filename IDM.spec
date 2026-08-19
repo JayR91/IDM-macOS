@@ -50,6 +50,11 @@ app = BUNDLE(
     bundle_identifier='com.idmclone.app',
     info_plist={
         'CFBundleDisplayName': 'IDM',
+        # No Dock icon, no app menu bar, doesn't show in Cmd+Tab -- a
+        # background/menu-bar-only app, like Slack's or Dropbox's tray
+        # presence. The status-bar icon (macos_integration.py) is the only
+        # UI when the window is closed; "Quit IDM" there is the real exit.
+        'LSUIElement': True,
         'CFBundleURLTypes': [
             {
                 'CFBundleURLName': 'Download URL',

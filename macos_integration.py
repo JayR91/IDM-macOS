@@ -19,11 +19,22 @@ class MacIntegration:
         if platform.system() != "Darwin":
             return
         try:
-            from AppKit import NSApplication, NSStatusBar, NSVariableStatusItemLength
+            from AppKit import (
+                NSApplication,
+                NSApplicationActivationPolicyAccessory,
+                NSStatusBar,
+                NSVariableStatusItemLength,
+            )
             self.NSApplication = NSApplication
             self.NSStatusBar = NSStatusBar
             self.NSVariableStatusItemLength = NSVariableStatusItemLength
             self.available = True
+            # Info.plist's LSUIElement alone isn't enough -- Tkinter's own
+            # Cocoa init forces "Foreground" (Dock icon, app menu bar) on the
+            # shared NSApplication regardless of it. Overriding the policy
+            # here, after Tk has already set it up, is what actually hides
+            # the Dock icon and makes this a background/menu-bar-only app.
+            NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyAccessory)
         except ImportError:
             return
 
