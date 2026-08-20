@@ -33,6 +33,9 @@ else
   echo "    who installs this app unless they separately install ffmpeg." >&2
 fi
 
+echo "==> Building per-browser extension packages"
+python3 scripts/build_extension.py
+
 # GPL compliance: the bundled ffmpeg is a GPLv3 build, so the license text and
 # the third-party notices (which carry the written offer for ffmpeg's source)
 # have to travel with the binary, not just live in the repo.

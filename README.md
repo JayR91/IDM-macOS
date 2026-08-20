@@ -89,26 +89,50 @@ builds if you prefer that packaging flow.
 
 ## Installing the browser extension
 
-The same `browser_extension/` source works, unmodified, in every Chromium-based browser
-(Chrome, Edge, Brave, Opera, Vivaldi) and in Firefox. Safari needs a one-time conversion
-into a native app wrapper (Apple requires this — there's no "load unpacked" for Safari).
+`browser_extension/` is the shared source. Safari needs a one-time conversion into a
+native app wrapper (Apple requires this — there's no "load unpacked" for Safari).
 In all cases, make sure the desktop app (`main.py`, or the installed `.app`) is running
 first — the extension only works while it's listening on `127.0.0.1:27182`.
+
+First, generate the per-browser packages (`scripts/build_dmg.sh` does this too):
+
+```bash
+python3 scripts/build_extension.py
+```
+
+That writes ready-to-load copies to a stable location:
+
+- Chromium: `~/Library/Application Support/VDR/extension-chrome`
+- Firefox: `~/Library/Application Support/VDR/extension-firefox`
+
+**Load from those paths, not from `browser_extension/` in the checkout.** Chromium
+records the on-disk path of an unpacked extension and silently disables it if that path
+ever moves — so loading it out of a source tree means renaming or relocating the repo
+breaks the extension, and the floating button just stops appearing. Re-run the script
+after changing extension code.
 
 ### Chrome, Edge, Brave, Opera, Vivaldi (Chromium)
 
 1. Open `chrome://extensions` (`edge://extensions`, `brave://extensions`, etc).
 2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and select the `browser_extension/` folder.
+3. Click **Load unpacked** and select
+   `~/Library/Application Support/VDR/extension-chrome`.
 
 ### Firefox
 
 1. Open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on…** and select `browser_extension/manifest.json`
+2. Click **Load Temporary Add-on…** and select
+   `~/Library/Application Support/VDR/extension-firefox/manifest.json`
    directly (not the folder).
 3. This load is temporary — Firefox drops it on restart. For a permanent install,
    the extension needs to be signed by Mozilla (`web-ext sign`) or Firefox needs to be
    on the Developer/Nightly channel with `xpinstall.signatures.required` disabled.
+
+Chromium and Firefox disagree on two MV3 details — Chromium wants
+`background.service_worker` while Firefox wants `background.scripts`, and Firefox needs
+a `browser_specific_settings.gecko` id that Chromium calls an unrecognized key. Each
+warns about the other's spelling, which is why there are two packages rather than one
+shared folder; loading either shows no manifest warnings.
 
 ### Safari
 

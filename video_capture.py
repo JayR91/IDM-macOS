@@ -50,6 +50,12 @@ def looks_like_video_url(url: str) -> bool:
     return False
 
 
+# Browsers whose cookie stores are tried, in order, when a site demands a
+# logged-in session. Reading these can prompt for Keychain access on macOS,
+# which is why it's a last resort rather than the default path.
+_COOKIE_BROWSERS = ("safari", "chrome", "firefox")
+
+
 class DownloadPaused(Exception):
     """Raise from a progress_hook to intentionally abort an in-progress
     download (e.g. the user clicked Pause). yt-dlp's downloader resumes
@@ -115,20 +121,14 @@ def download_video(
             {"format": "bestvideo+bestaudio/best", "postprocessors": []},
         ]
 
-    last_err = None
-    for extra_opts in attempts:
+    def _try(extra_opts) -> Optional[Exception]:
+        """Run one attempt. Returns None on success, or the exception raised."""
         before = set(os.listdir(dest_dir))
         try:
             with yt_dlp.YoutubeDL({**base_opts, **extra_opts}) as ydl:
                 ydl.download([url])
-            return
-        except DownloadPaused:
-            # Intentional stop, not a real failure -- don't fall back to a
-            # different format tier, and keep the partial fragments so the
-            # next attempt (on Resume) can continue from them.
-            raise
+            return None
         except Exception as e:
-            last_err = e
             # A failed attempt shouldn't leave partial fragments behind for
             # the next attempt (or the user) to trip over.
             for name in set(os.listdir(dest_dir)) - before:
@@ -136,4 +136,65 @@ def download_video(
                     os.remove(os.path.join(dest_dir, name))
                 except OSError:
                     pass
-    raise last_err
+            return e
+
+    last_err = None
+    for extra_opts in attempts:
+        err = _try(extra_opts)
+        if err is None:
+            return
+        if isinstance(err, DownloadPaused):
+            # Intentional stop, not a real failure -- don't fall back to a
+            # different format tier, and keep the partial fragments so the
+            # next attempt (on Resume) can continue from them.
+            raise err
+        last_err = err
+
+    # Only now, and only when the site actually said "log in", retry with the
+    # user's browser cookies. Gating on the error keeps the cookie stores (and
+    # the macOS Keychain prompt that reading Chrome's can trigger) completely
+    # out of the picture for ordinary failures like a 404 or a dropped network.
+    if _looks_like_login_required(last_err):
+        for browser in _COOKIE_BROWSERS:
+            err = _try({**attempts[0], "cookiesfrombrowser": (browser,)})
+            if err is None:
+                return
+            if isinstance(err, DownloadPaused):
+                raise err
+
+    raise _friendly_error(last_err)
+
+
+_LOGIN_MARKERS = (
+    "only works when logged-in",
+    "requires authentication",
+    "private video",
+    "sign in to confirm",
+    "members-only",
+    "this video is available to this channel's members",
+)
+
+
+class LoginRequired(Exception):
+    """The site refused anonymous access and no usable browser session was found."""
+
+
+def _looks_like_login_required(err: Optional[Exception]) -> bool:
+    return any(m in str(err or "").lower() for m in _LOGIN_MARKERS)
+
+
+def _friendly_error(err: Exception) -> Exception:
+    """Turn yt-dlp's raw, flag-laden error text into something a GUI can show.
+
+    yt-dlp's login errors read like CLI help ("Use --cookies, --netrc-cmd,
+    ..."), which is noise to someone clicking a button in a download manager.
+    """
+    text = str(err or "")
+    if any(m in text.lower() for m in _LOGIN_MARKERS):
+        return LoginRequired(
+            "This video requires being signed in. VDR already tried your "
+            "Safari, Chrome and Firefox sessions without finding one that "
+            "works — sign in to the site in one of those browsers, then try "
+            "again."
+        )
+    return err

@@ -3,16 +3,26 @@
   "name": "VDR Connector",
   "version": "1.0",
   "description": "Send downloads and video links from your browser to your local VDR download manager.",
-  "permissions": ["downloads", "activeTab", "storage", "contextMenus"],
-  "host_permissions": ["http://127.0.0.1:27182/*"],
+  "permissions": [
+    "downloads",
+    "activeTab",
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:27182/*"
+  ],
   "background": {
-    "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -30,12 +40,6 @@
       "32": "icons/icon-32.png",
       "48": "icons/icon-48.png",
       "128": "icons/icon-128.png"
-    }
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "vdr-connector@vdr-macos.app",
-      "strict_min_version": "109.0"
     }
   }
 }

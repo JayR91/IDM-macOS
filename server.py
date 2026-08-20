@@ -38,6 +38,15 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
             resp.headers["Access-Control-Allow-Origin"] = origin
             resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
             resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+            # Chrome's Private Network Access check: a request from a
+            # public/unknown-address page or extension to a loopback address
+            # like 127.0.0.1 gets a preflight with this header, and Chrome
+            # silently blocks the real request unless the response echoes it
+            # back -- background.js's fetch then just throws, which reads to
+            # the user as "app not running" even though the server is up and
+            # `curl` (which doesn't enforce PNA) looks fine the whole time.
+            if request.headers.get("Access-Control-Request-Private-Network") == "true":
+                resp.headers["Access-Control-Allow-Private-Network"] = "true"
         return resp
 
     @app.route("/ping", methods=["GET"])

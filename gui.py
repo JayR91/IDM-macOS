@@ -243,8 +243,15 @@ class App:
         # freeze until someone clicks OK. In a background/menu-bar app the
         # dialog can sit unnoticed behind other windows, so the app just looks
         # broken. See _flash_status().
-        self.activity_status = ttk.Label(root, text="", foreground="gray")
-        self.activity_status.pack(anchor="w", padx=10, pady=(0, 10))
+        self.activity_status = ttk.Label(root, text="", foreground="gray", justify="left")
+        self.activity_status.pack(anchor="w", fill="x", padx=10, pady=(0, 10))
+        # A message here can be a full sentence (e.g. the "sign in to the site"
+        # hint), which would otherwise run straight off the right edge of the
+        # window. Re-wrap to the label's actual width whenever it resizes.
+        self.activity_status.bind(
+            "<Configure>",
+            lambda e: e.widget.configure(wraplength=max(200, e.width - 8)),
+        )
         self._activity_clear_job = None
 
         self.mac = MacIntegration(self.add_url_from_drop, self.show_window, self.root.destroy)
