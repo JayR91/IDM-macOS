@@ -23,7 +23,7 @@ class MacIntegration:
         try:
             from AppKit import (
                 NSApplication,
-                NSApplicationActivationPolicyAccessory,
+                NSApplicationActivationPolicyRegular,
                 NSStatusBar,
                 NSVariableStatusItemLength,
             )
@@ -31,19 +31,18 @@ class MacIntegration:
             self.NSStatusBar = NSStatusBar
             self.NSVariableStatusItemLength = NSVariableStatusItemLength
             self.available = True
-            # Info.plist's LSUIElement alone isn't enough -- Tkinter's own
-            # Cocoa init forces "Foreground" (Dock icon, app menu bar) on the
-            # shared NSApplication regardless of it. Overriding the policy
-            # here, after Tk has already set it up, is what actually hides
-            # the Dock icon and makes this a background/menu-bar-only app.
+            # VDR is a normal Dock-visible app: the Dock icon is how you get
+            # the window back after closing it, and a visible Dock tile is
+            # also what makes the download-percentage badge render at all.
+            # Set the policy explicitly rather than relying on the default --
+            # it keeps this correct regardless of what Tk's own Cocoa init
+            # decides, and makes the intent obvious next to install_menu_bar().
+            #
+            # Closing the window does NOT quit: WM_DELETE_WINDOW just hides it
+            # (see gui.py) so downloads and the local server keep running, and
+            # clicking the Dock icon reopens it.
             app = NSApplication.sharedApplication()
-            app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
-            # Accessory apps don't get the automatic on-launch activation a
-            # normal (Dock-visible) app does, so without this the window
-            # exists but can end up behind other windows / never focused --
-            # invisible in practice even though the app is running. Force it
-            # forward once, on launch, so opening VDR still shows its window;
-            # only closing that window afterward should hide it again.
+            app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
             app.activateIgnoringOtherApps_(True)
         except ImportError:
             return
@@ -117,10 +116,12 @@ class MacIntegration:
             self.NSApplication.sharedApplication().dockTile().setBadgeLabel_(label or None)
 
     def set_progress(self, text: str):
-        """Show download progress next to the menu-bar icon. Dock badges
-        (set_dock_badge) only render on a visible Dock tile, which this app
-        intentionally doesn't have (see the Accessory activation policy in
-        __init__) -- this is the equivalent for a background-only app."""
+        """Show download progress next to the menu-bar icon.
+
+        Complements set_dock_badge rather than replacing it: the Dock tile
+        carries the percentage too, but the menu-bar copy stays visible when
+        the Dock is hidden or auto-hiding.
+        """
         if not (self.available and self.status_item and self._view):
             return
         if text == self._progress_text:

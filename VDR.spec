@@ -50,11 +50,12 @@ app = BUNDLE(
     bundle_identifier='com.vdr.app',
     info_plist={
         'CFBundleDisplayName': 'VDR',
-        # No Dock icon, no app menu bar, doesn't show in Cmd+Tab -- a
-        # background/menu-bar-only app, like Slack's or Dropbox's tray
-        # presence. The status-bar icon (macos_integration.py) is the only
-        # UI when the window is closed; "Quit VDR" there is the real exit.
-        'LSUIElement': True,
+        # Deliberately NOT LSUIElement: VDR keeps a normal Dock icon. Closing
+        # the window only hides it (see gui.py's WM_DELETE_WINDOW), so
+        # downloads and the local server keep running in the background and
+        # clicking the Dock icon brings the window back. The Dock tile is also
+        # what carries the download-percentage badge -- that only renders on a
+        # visible tile.
         'CFBundleURLTypes': [
             {
                 'CFBundleURLName': 'Download URL',

@@ -17,12 +17,15 @@ def _is_trusted_origin(origin: str) -> bool:
     return origin.startswith(_TRUSTED_EXTENSION_SCHEMES)
 
 
-def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
+def create_server(queue_manager, dest_dir: str, video_queue_fn=None, show_fn=None):
     """
     queue_manager: QueueManager instance to push regular file downloads into.
     dest_dir: default folder new downloads land in.
     video_queue_fn: optional callable(url) invoked for video/stream links
                      (wired up by the GUI to use video_capture.py in a thread).
+    show_fn: optional callable() bringing this instance's window to the front.
+             Backs /show, which lets a second launch surface the copy that's
+             already running instead of starting a duplicate (see main.py).
     """
     app = Flask(__name__)
 
@@ -52,6 +55,14 @@ def create_server(queue_manager, dest_dir: str, video_queue_fn=None):
     @app.route("/ping", methods=["GET"])
     def ping():
         return jsonify({"status": "ok", "app": "vdr"})
+
+    @app.route("/show", methods=["POST"])
+    def show():
+        # Deliberately localhost-only and side-effect-free beyond raising the
+        # window, so there's nothing here worth abusing even if a page reached it.
+        if show_fn:
+            show_fn()
+        return jsonify({"status": "ok"})
 
     @app.route("/add", methods=["POST", "OPTIONS"])
     def add():

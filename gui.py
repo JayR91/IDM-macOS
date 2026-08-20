@@ -254,11 +254,10 @@ class App:
         )
         self._activity_clear_job = None
 
-        self.mac = MacIntegration(self.add_url_from_drop, self.show_window, self.root.destroy)
+        self.mac = MacIntegration(self.add_url_from_drop, self.show_window, self.quit_app)
         self.root.after(700, self.mac.install_menu_bar)
-        # Accessory-policy apps (see macos_integration.py) don't reliably get
-        # focused/raised on launch on their own -- make sure the window is
-        # actually visible when the app is first opened.
+        # Make sure the window is actually up front when the app is opened,
+        # rather than buried behind whatever the user was already looking at.
         self.show_window()
         # Clicking the Dock icon while the app is already running (window
         # hidden) sends macOS's "reopen" event -- Tk's Cocoa port dispatches
@@ -268,7 +267,8 @@ class App:
         # Closing the window hides it rather than quitting -- downloads and
         # the local server (for the browser extension) keep running in the
         # background, exactly like closing Slack/Mail's window doesn't quit
-        # them. "Quit VDR" from the menu-bar icon is the real exit.
+        # them. Click the Dock icon to bring it back; Cmd+Q, the app menu, or
+        # "Quit VDR" in the menu-bar icon are the real exits.
         self.root.protocol("WM_DELETE_WINDOW", self.root.withdraw)
 
         self.root.after(200, self._drain_events)
@@ -500,6 +500,18 @@ class App:
 
     def show_window(self):
         self.root.after(0, lambda: (self.root.deiconify(), self.root.lift(), self.root.focus_force()))
+
+    def quit_app(self):
+        """Real exit, safe to call from an AppKit callback.
+
+        The menu-bar item's action fires from Cocoa, outside Tk's event loop.
+        Calling root.destroy() straight from there tears the interpreter down
+        while Tcl still has timers queued, and the next one to fire lands in
+        PyEval_RestoreThread with no thread state -- a hard abort
+        (Py_FatalError: TstateNULL) rather than a clean quit. Bouncing through
+        after() runs the teardown inside the event loop, where it's safe.
+        """
+        self.root.after(0, self.root.destroy)
 
     def _selected_task(self):
         sel = self.tree.selection()

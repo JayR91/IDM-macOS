@@ -27,7 +27,39 @@ from server import create_server, DEFAULT_PORT
 from gui import App, DEFAULT_DIR
 
 
+def _handoff_to_running_instance() -> bool:
+    """If VDR is already running, raise its window and report True.
+
+    Without this a second launch still builds a whole second UI -- another
+    window, another menu-bar icon -- while its server silently loses the race
+    for the port, so the copy you're looking at is not the one the browser
+    extension talks to. macOS only dedupes launches of the *same* bundle, which
+    doesn't help when a copy is run from somewhere else (a build tree, a DMG).
+    """
+    import json
+    import urllib.request
+
+    base = f"http://127.0.0.1:{DEFAULT_PORT}"
+    try:
+        with urllib.request.urlopen(f"{base}/ping", timeout=1.5) as resp:
+            if json.loads(resp.read().decode() or "{}").get("app") != "vdr":
+                return False  # something else is on the port; let the normal path report it
+    except Exception:
+        return False
+
+    try:
+        urllib.request.urlopen(
+            urllib.request.Request(f"{base}/show", method="POST"), timeout=1.5
+        ).close()
+    except Exception:
+        pass  # already running is reason enough to bow out, even if /show fails
+    return True
+
+
 def main():
+    if _handoff_to_running_instance():
+        return
+
     os.makedirs(DEFAULT_DIR, exist_ok=True)
     qm = QueueManager(max_concurrent=3, global_speed_limit=None)
 
@@ -38,7 +70,9 @@ def main():
         if arg.startswith(("http://", "https://")):
             root.after(0, lambda url=arg: app.add_url_from_drop(url))
 
-    flask_app = create_server(qm, DEFAULT_DIR, video_queue_fn=app.queue_video)
+    flask_app = create_server(
+        qm, DEFAULT_DIR, video_queue_fn=app.queue_video, show_fn=app.show_window
+    )
 
     def run_server():
         try:
