@@ -122,11 +122,20 @@ def download_video(
         # lower, which turned a ~28MB download into ~270MB of the same short
         # film. 1080p keeps files (and wait times) sane by default; pass an
         # explicit `quality` to override.
+        # Each "/" step relaxes one requirement. Insisting on mp4a audio is
+        # right for YouTube but matches nothing on sites whose audio tracks
+        # report no codec at all -- Vimeo's HLS audio comes back acodec=None,
+        # so an mp4a-only selector fails with "Requested format is not
+        # available" even though the video really is H.264. Falling back to
+        # any audio track, and then to a progressive stream, keeps those
+        # working while still preferring the QuickTime-friendly pairing.
         h264_fmt = (
             f"bv*[vcodec^=avc1][height<={MAX_HEIGHT}]+ba[acodec^=mp4a]"
-            f"/b[vcodec^=avc1][height<={MAX_HEIGHT}][acodec^=mp4a]"
+            f"/bv*[vcodec^=avc1][height<={MAX_HEIGHT}]+ba"
+            f"/b[vcodec^=avc1][height<={MAX_HEIGHT}]"
             f"/bv*[vcodec^=avc1]+ba[acodec^=mp4a]"
-            f"/b[vcodec^=avc1][acodec^=mp4a]"
+            f"/bv*[vcodec^=avc1]+ba"
+            f"/b[vcodec^=avc1]"
         )
         attempts = [
             {"format": h264_fmt, "postprocessors": []},
@@ -171,11 +180,23 @@ def download_video(
     # out of the picture for ordinary failures like a 404 or a dropped network.
     if _looks_like_login_required(last_err):
         for browser in _COOKIE_BROWSERS:
-            err = _try({**attempts[0], "cookiesfrombrowser": (browser,)})
-            if err is None:
-                return
-            if isinstance(err, DownloadPaused):
-                raise err
+            for extra_opts in attempts:
+                # Every format tier, not just the first: signing in only gets
+                # past the login wall, and the site may still have no stream
+                # matching the preferred H.264 pairing -- the later, looser
+                # tiers are exactly what covers that.
+                err = _try({**extra_opts, "cookiesfrombrowser": (browser,)})
+                if err is None:
+                    return
+                if isinstance(err, DownloadPaused):
+                    raise err
+            # Keep the cookie attempt's own error. A browser that *is* signed
+            # in gets past the login wall and then fails for some other reason
+            # (no matching format, say); reporting the earlier login-required
+            # error instead would send the user off signing in again to fix
+            # something that has nothing to do with signing in.
+            if not _looks_like_login_required(err):
+                last_err = err
 
     raise _friendly_error(last_err)
 
@@ -194,6 +215,10 @@ class LoginRequired(Exception):
     """The site refused anonymous access and no usable browser session was found."""
 
 
+class DRMProtected(Exception):
+    """The only streams on offer are DRM-encrypted, so there is nothing to fetch."""
+
+
 def _looks_like_login_required(err: Optional[Exception]) -> bool:
     return any(m in str(err or "").lower() for m in _LOGIN_MARKERS)
 
@@ -205,6 +230,14 @@ def _friendly_error(err: Exception) -> Exception:
     ..."), which is noise to someone clicking a button in a download manager.
     """
     text = str(err or "")
+    if "drm" in text.lower():
+        # Not a fault to retry around: the streams are encrypted, and VDR has
+        # no business trying to decrypt them. Say so plainly instead of
+        # showing yt-dlp's "try another format" hint, which implies otherwise.
+        return DRMProtected(
+            "This video is DRM-protected, so it can't be downloaded. "
+            "Watch it on the site instead."
+        )
     if any(m in text.lower() for m in _LOGIN_MARKERS):
         return LoginRequired(
             "This video requires being signed in. VDR already tried your "
