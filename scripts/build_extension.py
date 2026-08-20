@@ -42,31 +42,42 @@ GECKO = {
 IGNORE = shutil.ignore_patterns("__pycache__", ".DS_Store")
 
 
-def _firefox_manifest() -> str:
+def _manifest_for(flavour: str) -> str:
     manifest = json.loads((SRC / "manifest.json").read_text())
-    manifest["background"] = {"scripts": ["background.js"]}
-    manifest["browser_specific_settings"] = GECKO
+    if flavour == "firefox":
+        # Firefox has no MV3 service worker; it wants an event page.
+        manifest["background"] = {"scripts": ["background.js"]}
+        manifest["browser_specific_settings"] = GECKO
+    elif flavour == "safari":
+        # Safari registers an MV3 `service_worker` but never actually runs it
+        # here -- Develop > Web Extension Background Content stays empty, so
+        # runtime.sendMessage from the content script gets no listener, the
+        # fetch never happens, and the button reports "app not running".
+        # A non-persistent background script does run.
+        manifest["background"] = {"scripts": ["background.js"], "persistent": False}
     return json.dumps(manifest, indent=2) + "\n"
 
 
-def _sync(dest: pathlib.Path, firefox: bool) -> pathlib.Path:
+def _sync(dest: pathlib.Path, flavour: str) -> pathlib.Path:
     if dest.exists():
         shutil.rmtree(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(SRC, dest, ignore=IGNORE)
-    if firefox:
-        (dest / "manifest.json").write_text(_firefox_manifest())
+    if flavour != "chrome":
+        (dest / "manifest.json").write_text(_manifest_for(flavour))
     return dest
 
 
 def main() -> None:
-    _sync(OUT, firefox=True)
-    chrome_install = _sync(INSTALL / "extension-chrome", firefox=False)
-    firefox_install = _sync(INSTALL / "extension-firefox", firefox=True)
+    _sync(OUT, "firefox")
+    chrome_install = _sync(INSTALL / "extension-chrome", "chrome")
+    firefox_install = _sync(INSTALL / "extension-firefox", "firefox")
+    safari_src = _sync(INSTALL / "extension-safari", "safari")
 
     print("Load these paths in the browser (they survive moving/renaming the repo):")
     print(f"  Chromium : {chrome_install}")
     print(f"  Firefox  : {firefox_install / 'manifest.json'}")
+    print(f"  Safari   : {safari_src}  (input for safari-web-extension-converter)")
     print(f"\nBuild-tree copy of the Firefox flavour: {OUT}")
 
 

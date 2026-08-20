@@ -55,6 +55,9 @@ def looks_like_video_url(url: str) -> bool:
 # which is why it's a last resort rather than the default path.
 _COOKIE_BROWSERS = ("safari", "chrome", "firefox")
 
+# Default ceiling on video height. See download_video() for why this exists.
+MAX_HEIGHT = 1080
+
 
 class DownloadPaused(Exception):
     """Raise from a progress_hook to intentionally abort an in-progress
@@ -113,12 +116,24 @@ def download_video(
         # decode. Some videos' preferred-format URLs come back HTTP 403 depending
         # on which YouTube "player client" served them, so retry with alternate
         # clients before falling back to whatever format is actually reachable.
-        h264_fmt = "bv*[vcodec^=avc1]+ba[acodec^=mp4a]/b[vcodec^=avc1][acodec^=mp4a]"
+        #
+        # Capped at MAX_HEIGHT rather than taking the literal best: newer
+        # yt-dlp surfaces 4K avc1 for clips that previously topped out far
+        # lower, which turned a ~28MB download into ~270MB of the same short
+        # film. 1080p keeps files (and wait times) sane by default; pass an
+        # explicit `quality` to override.
+        h264_fmt = (
+            f"bv*[vcodec^=avc1][height<={MAX_HEIGHT}]+ba[acodec^=mp4a]"
+            f"/b[vcodec^=avc1][height<={MAX_HEIGHT}][acodec^=mp4a]"
+            f"/bv*[vcodec^=avc1]+ba[acodec^=mp4a]"
+            f"/b[vcodec^=avc1][acodec^=mp4a]"
+        )
         attempts = [
             {"format": h264_fmt, "postprocessors": []},
             {"format": h264_fmt, "postprocessors": [],
              "extractor_args": {"youtube": {"player_client": ["android", "web"]}}},
-            {"format": "bestvideo+bestaudio/best", "postprocessors": []},
+            {"format": f"bestvideo[height<={MAX_HEIGHT}]+bestaudio/best[height<={MAX_HEIGHT}]/best",
+             "postprocessors": []},
         ]
 
     def _try(extra_opts) -> Optional[Exception]:
